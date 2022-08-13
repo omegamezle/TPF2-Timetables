@@ -18,6 +18,9 @@ local UIState = {
 local co = nil
 local state = nil
 
+local saveEnabled = true
+local saveEnabledChanged = false
+
 local timetableChanged = false
 local clearConstraintWindowLaterHACK = nil
 
@@ -261,6 +264,30 @@ function timetableGUI.showLineMenu()
         end
     end)
 
+    if not api.gui.util.getById('timetable.floatingAdvancedTab') then
+        local floatingLayout = api.gui.layout.FloatingLayout.new(0,1)
+        floatingLayout:setId("timetable.floatingAdvancedTab")
+    end
+
+    UIState.floatingAdvancedTab = api.gui.util.getById('timetable.floatingAdvancedTab')
+    UIState.floatingAdvancedTab:setGravity(-1,-1)
+
+    local advancedTable = api.gui.comp.Table.new(2, 'None')
+    UIState.saveImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
+    if saveEnabled then UIState.saveImage:setImage("ui/checkbox1.tga", false) end
+    local saveButton= api.gui.comp.Button.new(UIState.saveImage, true)
+    local saveText  = api.gui.comp.TextView.new("Save timetable. Disabling stops timetable from being saved, improves performance. Automatically re-enables when the timetable is changed.")
+    saveButton:onClick(function ()
+        updateSaveEnabled(not saveEnabled)
+    end)
+
+    advancedTable:addRow({saveButton, saveText})
+    UIState.floatingAdvancedTab:addItem(advancedTable,0,0)
+
+    local wrapper3 = api.gui.comp.Component.new("wrapper3")
+    wrapper3:setLayout(UIState.floatingAdvancedTab) -- TODO
+    menu.tabWidget:addTab(api.gui.comp.TextView.new("Advanced"), wrapper3)
+
     -- create final window
     menu.window = api.gui.comp.Window.new(UIStrings.timetables, menu.tabWidget)
     menu.window:addHideOnCloseHandler()
@@ -278,6 +305,19 @@ end
 -------------------------------------------------------------
 ---------------------- LEFT TABLE ---------------------------
 -------------------------------------------------------------
+
+function updateSaveEnabled(value)
+    saveEnabled = value
+
+    if UIState.saveImage == nil then return end
+    if saveEnabled then        
+        UIState.saveImage:setImage("ui/checkbox1.tga", false)
+    else
+        UIState.saveImage:setImage("ui/checkbox0.tga", false)
+    end
+
+    saveEnabledChanged = true
+end
 
 function timetableGUI.fillLineTable()
     menu.lineTable:deleteRows(0,menu.lineTable:getNumRows())
@@ -599,8 +639,14 @@ function timetableGUI.fillConstraintTable(index,lineID)
 
     comboBox:onIndexChanged(function (i)
         if i == -1 then return end
-        timetable.setConditionType(lineID, index, timetableHelper.constraintIntToString(i))
-        timetableChanged = true
+        -- if condition types dont match then set timetableChanged to true
+        local newConstraint = timetableHelper.constraintIntToString(i)
+        local currentConstraint = timetable.getConditionType(lineID, index)
+        timetable.setConditionType(lineID, index, newConstraint)
+        if not (currentConstraint == newConstraint) then
+            timetableChanged = true
+            print("TEST")
+        end
         timetableGUI.initStationTable()
         timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
         UIState.currentlySelectedConstraintType = i
@@ -835,11 +881,17 @@ function data()
                 state.timetable = param
                 timetable.setTimetableObject(state.timetable)
                 timetableChanged = true
+            elseif id == "saveEnabledChanged" then
+                saveEnabled = param.value
             end
         end,
 
         save = function()
-            return state
+            if saveEnabled then
+                return state
+            end
+
+            return nil
         end,
 
         load = function(loadedState)
@@ -874,7 +926,13 @@ function data()
         end,
 
         guiUpdate = function()
+            if saveEnabledChanged then
+                print("Timetable save enabled: " .. tostring(saveEnabled))
+                game.interface.sendScriptEvent("saveEnabledChanged", "", { value = saveEnabled })
+                saveEnabledChanged = false
+            end
             if timetableChanged then
+                updateSaveEnabled(true)
                 game.interface.sendScriptEvent("timetableUpdate", "", timetable.getTimetableObject())
                 timetableChanged = false
             end
