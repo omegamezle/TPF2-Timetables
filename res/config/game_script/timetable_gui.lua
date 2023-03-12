@@ -224,38 +224,35 @@ function timetableGUI.initStationTable()
     if menu.stationScrollArea then
         local tmp = menu.stationScrollArea:getScrollOffset()
         stationTableScrollOffset = api.type.Vec2i.new(tmp.x, tmp.y)
-        UIState.boxlayout2:removeItem(menu.stationScrollArea)
     else
         stationTableScrollOffset = api.type.Vec2i.new()
+        menu.stationScrollArea = api.gui.comp.ScrollArea.new(api.gui.comp.TextView.new('stationScrollArea'), "timetable.stationScrollArea")
+        menu.stationScrollArea:setMinimumSize(api.gui.util.Size.new(500, 700))
+        menu.stationScrollArea:setMaximumSize(api.gui.util.Size.new(500, 700))
+        UIState.boxlayout2:addItem(menu.stationScrollArea,0.5,0)
     end
 
-    menu.stationScrollArea = api.gui.comp.ScrollArea.new(api.gui.comp.TextView.new('stationScrollArea'), "timetable.stationScrollArea")
     menu.stationTable = api.gui.comp.Table.new(4, 'SINGLE')
     menu.stationTable:setColWidth(0,40)
     menu.stationTable:setColWidth(1,120)
-    menu.stationScrollArea:setMinimumSize(api.gui.util.Size.new(500, 700))
-    menu.stationScrollArea:setMaximumSize(api.gui.util.Size.new(500, 700))
     menu.stationScrollArea:setContent(menu.stationTable)
-    UIState.boxlayout2:addItem(menu.stationScrollArea,0.5,0)
 end
 
 function timetableGUI.initConstraintTable()
     if menu.scrollAreaConstraint then
         local tmp = menu.scrollAreaConstraint:getScrollOffset()
         constraintTableScrollOffset = api.type.Vec2i.new(tmp.x, tmp.y)
-        UIState.boxlayout2:removeItem(menu.scrollAreaConstraint)
     else
         constraintTableScrollOffset = api.type.Vec2i.new()
+        menu.scrollAreaConstraint = api.gui.comp.ScrollArea.new(api.gui.comp.TextView.new('scrollAreaConstraint'), "timetable.scrollAreaConstraint")
+        menu.scrollAreaConstraint:setMinimumSize(api.gui.util.Size.new(300, 700))
+        menu.scrollAreaConstraint:setMaximumSize(api.gui.util.Size.new(300, 700))
+        UIState.boxlayout2:addItem(menu.scrollAreaConstraint,1,0)
     end
 
-    menu.scrollAreaConstraint = api.gui.comp.ScrollArea.new(api.gui.comp.TextView.new('scrollAreaConstraint'), "timetable.scrollAreaConstraint")
     menu.constraintTable = api.gui.comp.Table.new(1, 'NONE')
-    menu.scrollAreaConstraint:setMinimumSize(api.gui.util.Size.new(300, 700))
-    menu.scrollAreaConstraint:setMaximumSize(api.gui.util.Size.new(300, 700))
     menu.scrollAreaConstraint:setContent(menu.constraintTable)
-    UIState.boxlayout2:addItem(menu.scrollAreaConstraint,1,0)
 end
-
 function timetableGUI.showLineMenu()
     if menu.window ~= nil then
         timetableGUI.initLineTable()
@@ -467,8 +464,11 @@ function timetableGUI.fillLineTable()
     end)
 
     UIState.boxlayout2:addItem(menu.lineHeader,0,0)
-    menu.scrollArea:invokeLater( function () menu.scrollArea:invokeLater(function () menu.scrollArea:setScrollOffset(lineTableScrollOffset) end) end)
-
+    menu.scrollArea:invokeLater( function () 
+        menu.scrollArea:invokeLater(function () 
+            menu.scrollArea:setScrollOffset(lineTableScrollOffset) 
+        end) 
+    end)
 end
 
 -------------------------------------------------------------
@@ -600,9 +600,11 @@ function timetableGUI.fillStationTable(index, bool)
             menu.stationTable:select(UIState.currentlySelectedStationIndex, bool)
         end
     end
-    menu.stationScrollArea:invokeLater(
-        function () menu.stationScrollArea:invokeLater(
-            function () menu.stationScrollArea:setScrollOffset(stationTableScrollOffset) end) end)
+    menu.stationScrollArea:invokeLater(function () 
+        menu.stationScrollArea:invokeLater(function () 
+            menu.stationScrollArea:setScrollOffset(stationTableScrollOffset) 
+        end) 
+    end)
 end
 
 -------------------------------------------------------------
@@ -634,10 +636,13 @@ function timetableGUI.fillConstraintTable(index,lineID)
     --comboBox:addItem("Every X minutes")
     comboBox:setGravity(1,0)
 
-    local constraintIndex = timetableHelper.constraintStringToInt(timetable.getConditionType(lineID, index))
+    UIState.currentlySelectedConstraintType = timetableHelper.constraintStringToInt(timetable.getConditionType(lineID, index))
 
 
     comboBox:onIndexChanged(function (i)
+        if not api.engine.entityExists(lineID) then 
+            return
+        end
         if i == -1 then return end
         local constraintType = timetableHelper.constraintIntToString(i)
         timetable.setConditionType(lineID, index, constraintType)
@@ -649,10 +654,13 @@ function timetableGUI.fillConstraintTable(index,lineID)
             if not conditions[1] then conditions[1] = 1 end
             if not conditions[2] then conditions[2] = 0 end
         end
-        timetableChanged = true
-        timetableGUI.initStationTable()
-        timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-        UIState.currentlySelectedConstraintType = i
+
+        if i ~= UIState.currentlySelectedConstraintType then
+            timetableChanged = true
+            timetableGUI.initStationTable()
+            timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+            UIState.currentlySelectedConstraintType = i
+        end
 
         timetableGUI.clearConstraintWindow()
         if i == 1 then
@@ -672,10 +680,12 @@ function timetableGUI.fillConstraintTable(index,lineID)
     local table = api.gui.comp.Table.new(2, 'NONE')
     table:addRow({infoImage,comboBox})
     menu.constraintTable:addRow({table})
-    comboBox:setSelected(constraintIndex, true)
-    menu.scrollAreaConstraint:invokeLater(
-        function () menu.scrollAreaConstraint:invokeLater(
-            function () menu.scrollAreaConstraint:setScrollOffset(constraintTableScrollOffset) end) end)
+    comboBox:setSelected(UIState.currentlySelectedConstraintType, true)
+    menu.scrollAreaConstraint:invokeLater(function ()
+        menu.scrollAreaConstraint:invokeLater(function () 
+            menu.scrollAreaConstraint:setScrollOffset(constraintTableScrollOffset) 
+        end) 
+    end)
 end
 
 
