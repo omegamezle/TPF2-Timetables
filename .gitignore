@@ -138,3 +138,6 @@ $RECYCLE.BIN/
 .obsidian
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,notepadpp,windows,macos,linux,lua
+
+# Steam Workshop file id
+workshop_fileid.txt

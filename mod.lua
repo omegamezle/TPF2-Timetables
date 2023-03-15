@@ -13,6 +13,16 @@ function data()
 					name = "Celmi", -- author name
 					role = "CREATOR", -- OPTIONAL "CREATOR", "CO_CREATOR", "TESTER" or "BASED_ON" or "OTHER"
 					tfnetId = "" -- OPTIONAL train-fever-net author id
+				},
+				{
+					name = "Gregory365",
+					role = "CO_CREATOR",
+					tfnetId = ""
+				},
+				{
+					name = "quittung",
+					role = "CO_CREATOR",
+					tfnetId = ""
 				}
 			},
 		},
