@@ -1,10 +1,11 @@
-[h1]Timetables[/h1]
-I can proudly present my newest Project: Timetables!
+[h1]Timetables (1.3)[/h1]
+I can proudly present an update to TF2s most popular mod: Timetables!
 This mod adds timetables to the game.
-Timetables can be configured for each line and each station individually. There are two types of timetable constraints that can be added to a station:
+Timetables can be configured for each line and each station individually. There are three types of timetable constraints that can be added to a station:
 [list]
 [*] [b] Arrival/Departure[/b]: You can add arrival/departure timeslots. The train chooses the closest arrival time slot when entering the station, and then wait until the departure time. 
 [*] [b] Unbunch[/b]: You can set the frequency and the mod will enforce that the trains will depart this station with the given frequency. 
+[*] [b] Auto Unbunch[/b]: You can set the line to automatically unbunch each vehicle by the frequency of the line.
 [/list]
 Trains will depart right away when they are late without interference from the mod. The timetable mod uses the game the stop command and can therefore only enforce longer waiting times. It won't make trains drive faster or load/unload quicker.
 
@@ -15,31 +16,60 @@ Timetables are only working when the checkbox on the line overview is ticked.
 [h3]German[/h3]
 [url=https://www.youtube.com/watch?v=ykh5ttBoTAs]Link[/url]
 
+[h2]Updates from the original mod[/h2]
+You can view the original mod [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2408373260]here[/url]
+This mod is a fork of the original and adds the following features:
+[list]
+[*] Supports multiple vehicles at the same station
+[*] Remembers the timetable slot of vehicles after a load-save cycle
+[*] Adds Auto Unbunch to automatically unbunch vehicles regardless of how many are on the line
+[*] Updated colours to support the Spring Update line colours
+[*] Minimum waiting time is supported
+[*] Maximum waiting time is supported
+[/list]
+
+[h2]Things to beware of[/h2]
+[list]
+[*] Saves can be transferred from the original mod to this mod
+[*] Saves [b]cannot[/b] be transferred from this mod back to the original mod
+[*] Therefore, I would recommend making backups of saves before migrating to this mod
+[*] The behaviour for picking timetable slots has changed. Vehicles now pick the nearest slot, regardless of whether it is in the past or the future.
+[*] To support multiple vehicles at the same station, vehicles will pick the next consecutive available arrival time when the nearest is taken.
+[/list]
+
 [h2]Contribute[/h2]
-The source code of the timetable mod is available on GitHub. Any contributions are very welcome!
+The source code of this timetable mod is available on GitHub. Any contributions are very welcome!
+[url=https://github.com/Gregory365/TPF2-Timetables][img]https://raw.githubusercontent.com/Gregory365/TPF2-Timetables/develop/github_button.png[/img][/url]
+
+The source code of the original timetable mod is also available on GitHub.
 [url=https://github.com/IncredibleHannes/TPF2-Timetables][img]https://raw.githubusercontent.com/IncredibleHannes/TPF2-Timetables/develop/github_button.png[/img][/url]
 
-If you want to actively collaborate on the future development of this mod, join our Discord server:
+If you want to actively collaborate on the future development of this mod, join the TF2-Timetabeles Discord server:
 [url=https://discord.gg/7KbVP8Fr6Z]Link[/url]
 
 
 [h2]Reporting bugs/Submitting feature requests[/h2]
-My prefered method and therefore the most likely method to get my attention will be through GitHub issues.
+My prefered method and therefore the most likely method to get my attention will be through [url=https://github.com/Gregory365/TPF2-Timetables/issues]GitHub issues[/url]
+The discussions tab can also be used
 
 
-If you like my mods, a donation would be greatly appreciated:
+If you like this mod, a donation would be greatly appreciated:
+This Mod Author
+[url=https://www.paypal.com/donate/?hosted_button_id=2G2WWAKJNEA6E][img]https://i.imgur.com/GpY6AzF.png[/img][/url]
+Original Mod Author
 [url=https://www.paypal.com/donate?hosted_button_id=NZWEU467XUWJ6][img]https://i.imgur.com/GpY6AzF.png[/img][/url]
 
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 
-[h1]Fahrpläne[/h1]
-Mit Stolz präsentiere ich heute mein neustes Project: Fahrpläne!
+[h1]Fahrpläne (1.3)[/h1]
+Ich kann stolz ein Update für TF2s beliebteste Mod präsentieren: Fahrpläne!
 Dieser Mod fügt dem Spiel Fahrpläne hinzu
-Die Fahrpläne können individuell für jede Linie und Station angepasst werden. Es gibt 2 Typen von Fahrplan Bedingungen die einer Station hinzugefügt werden können:
+Die Fahrpläne können individuell für jede Linie und Station angepasst werden. Es gibt 3 Typen von Fahrplan Bedingungen die einer Station hinzugefügt werden können:
 [list]
 [*] [b] Arrival/Departure[/b]: Es ist möglich Ankunft/Abfahrt Slots der Station hinzuzufügen. Der ankommende Zug entscheidend anhand der Ankunftszeit welchen Slot er nimmt und wartet dann bis zur Abfahrtszeit in der Station.
 [*] [b] Unbunch[/b]: Es kann eine Frequenz gesetzt werden. Der Zug fährt in der gesetzten Frequenz am Bahnhof ab.
+[*] [b] Auto Unbunch[/b]: Sie können die Linie so einstellen, dass jedes Fahrzeug anhand der Frequenz der Linie automatisch entbündelt wird.
 [/list]
 Bei Verspätung fahren die Züge nach dem ein und ausladen direkt weiter. Der Mod verwendet das Stop Kommando aus dem Spiel und kann deshalb nur Züge länger warten lassen, jedoch keine Züge schneller fahren lassen oder die Ladezeitn beschleunigen!
 
@@ -50,50 +80,44 @@ Damit die Fahrpläne funktionieren muss die kleine Checkbox auf der Linienübers
 [h3]Deutsch[/h3]
 [url=https://www.youtube.com/watch?v=ykh5ttBoTAs]Link[/url]
 
+[h2]Updates from the original mod[/h2]
+Sie können den Original-Mod [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2408373260]hier ansehen[/url]
+Dieser Mod ist ein Fork des Originals und fügt die folgenden Funktionen hinzu:
+[list]
+[*] Unterstützt mehrere Fahrzeuge an derselben Station
+[*] Merkt sich den Fahrplan-Slot von Fahrzeugen nach einem Ladesparzyklus
+[*] Fügt Auto Unbunch hinzu, um Fahrzeuge automatisch zu entbündeln, unabhängig davon, wie viele sich auf der Linie befinden
+[*] Aktualisierte Farben zur Unterstützung der neuen Farben aus dem Frühlings-Update
+[*] Mindestwartezeit wird unterstützt
+[*] Maximale Wartezeit wird unterstützt
+[/list]
+
+[h2]Wichtige Änderungen[/h2]
+[list]
+[*] Saves können vom Original-Mod auf diesen Mod übertragen werden
+[*] Speicherstände können [b]nicht[/b] von diesem Mod zurück auf den Original-Mod übertragen werden
+[*] Daher würde ich empfehlen, Sicherungskopien von Spielständen zu erstellen, bevor Sie zu diesem Mod migrieren
+[*] Das Verhalten bei der Auswahl von Stundenplan-Slots hat sich geändert. Fahrzeuge wählen jetzt den nächstgelegenen Stellplatz, unabhängig davon, ob er in der Vergangenheit oder in der Zukunft liegt.
+[*] Um mehrere Fahrzeuge an derselben Station zu unterstützen, wählen die Fahrzeuge die nächstfolgende verfügbare Ankunftszeit aus, wenn die nächste genommen wird.
+[/list]
+
 [h2]Contribute[/h2]
-Der Code von dem Mod ist auf GitHub verfügbar. Mitarbeit für zukünftige Features ist deutlich erwünscht!
+Der Quellcode dieses Stundenplan-Mods ist auf GitHub verfügbar. Jeder Beitrag ist sehr willkommen!
+[url=https://github.com/Gregory365/TPF2-Timetables][img]https://raw.githubusercontent.com/Gregory365/TPF2-Timetables/develop/github_button.png[/img][/url]
+
+Der Quellcode des ursprünglichen Stundenplan-Mods ist auch auf GitHub verfügbar.
 [url=https://github.com/IncredibleHannes/TPF2-Timetables][img]https://raw.githubusercontent.com/IncredibleHannes/TPF2-Timetables/develop/github_button.png[/img][/url]
 
 Wenn du aktiv an der Weiterentwicklung des Mods mitarbeiten möchtest, tritt bitte unserem Discord Server bei:
 [url=https://discord.gg/7KbVP8Fr6Z]Link[/url]
 
 [h2]Reporting bugs/Submitting feature requests[/h2]
-Bevorzugt über GitHub, da habt ihr die größten Erfolgsaussichten das ich es auch mitbekomme und behebe!
+Bevorzugt über [url=https://github.com/Gregory365/TPF2-Timetables/issues]GitHub[/url], da habt ihr die größten Erfolgsaussichten das ich es auch mitbekomme und behebe!
+Die Registerkarte „Diskussionen“ kann ebenfalls verwendet werden
 
 
 Wenn du meine Mods magst freue ich mich über eine kleine Spende:
-[url=https://www.paypal.com/donate?hosted_button_id=NZWEU467XUWJ6][img]https://i.imgur.com/GpY6AzF.png[/img][/url]
-
----------------------------------------------------------------------------------------------------------------------------------------------------
-
-[h1]Расписания[/h1]
-С гордостью представляю вам свой новейший проект: Timetables!
-Этот мод добавляет расписания в игру.
-Расписания могут настраиваться для каждой линии и станции отдельно. Есть два варианта регулировки, которые могут быть добавлены для каждой станции:
-[list]
-[] [b] Прибытие/Отправление[/b]: Вы можете добавлять время прибытия/отправления поездов. Поезд выберет ближайшее время в существующем расписаниии по прибытии на станцию, и затем адаптируется под него. 
-[] [b] Интервал[/b]: Вы можете установить временной отрезок и составы будут двигаться с указанным интервалом. 
-[/list]
-Если поезда отстают от расписания, они будут отправляться сразу после загрузки. Поскольку мод построен на игровой механике остановок, он влияет только на нее. Он не может заставить поезда двигаться быстрее или медленнее, или ускорять загрузку пассажиров.
-
-Расписания работают только тогда, когда установлена галочка в меню действующих линий.
-[h2]Гайды[/h2]
-[h3]Англоязычный[/h3]
-[url=https://www.youtube.com/watch?v=DFCW1PTCoO4]Тык[/url]
-[h3]Немецкий[/h3]
-[url=https://www.youtube.com/watch?v=ykh5ttBoTAs]Тык[/url]
-
-[h2]Благодарность[/h2]
-Оригинальный код мода доступен на платформе GitHub. Любой вклад в разработку очень приветствуется!
-[url=https://github.com/IncredibleHannes/TPF2-Timetables][img]https://raw.githubusercontent.com/IncredibleHannes/TPF2-Timetables/develop/github_button.png[/img][/url]
-
-Если вы хотите принять активное участие в будущем мода, присоединяйтесь к нашему Discord серверу:
-[url=https://discord.gg/7KbVP8Fr6Z]Link[/url]
-
-
-[h2]Сообщения о багах / Предложения по улучшению[/h2]
-Наиболее удобный метод связи со мной является платформа Github, через раздел "Issues".
-
-
-Если вам нравятся мои моды, я буду очень благодарен вам за финансовую поддержку:
+Dieser Mod-Autor
+[url=https://www.paypal.com/donate/?hosted_button_id=2G2WWAKJNEA6E][img]https://i.imgur.com/GpY6AzF.png[/img][/url]
+Ursprünglicher Mod-Autor
 [url=https://www.paypal.com/donate?hosted_button_id=NZWEU467XUWJ6][img]https://i.imgur.com/GpY6AzF.png[/img][/url]
