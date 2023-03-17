@@ -747,15 +747,10 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     generateButton:setGravity(1, 0)
     generateButton:onClick(function()
         -- preparation
-        if not conditions[1] then return end                        -- template condition not found
+        if #conditions ~= 1 then return end                        -- template condition not found
         if separationCombo:getCurrentIndex() == -1 then return end  -- no separation selected
         templateArrDep = conditions[1]
-
-        -- remove all conditions after the template
-        while conditions[2] do
-            timetable.removeCondition(lineID, stationID, "ArrDep", 2)
-        end
-
+        
         -- generate recurring conditions
         local separation = separationList[separationCombo:getCurrentIndex() + 1]
         for i = 1, 60 / separation - 1 do
