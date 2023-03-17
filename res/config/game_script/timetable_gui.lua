@@ -167,7 +167,7 @@ function timetableGUI.stFillLines(tabIndex)
 
 
             -- add constraint info
-            local type = timetableHelper.conditionToString(stopData.conditions[stopData.conditions.type], stopData.conditions.type)
+            local type = timetableHelper.conditionToString(stopData.conditions[stopData.conditions.type], lineID, stopData.conditions.type)
             local stConditionString = api.gui.comp.TextView.new(type)
             stConditionString:setName("conditionString")
             stConditionString:setStyleClassList(local_style)
@@ -573,7 +573,7 @@ function timetableGUI.fillStationTable(index, bool)
 
 
         local conditionType = timetable.getConditionType(lineID, k)
-        local condStr = timetableHelper.conditionToString(timetable.getConditions(lineID, k, conditionType), conditionType)
+        local condStr = timetableHelper.conditionToString(timetable.getConditions(lineID, k, conditionType), lineID, conditionType)
         local conditionString = api.gui.comp.TextView.new(condStr)
         conditionString:setName("conditionString")
         conditionString:setStyleClassList(local_style)
@@ -933,9 +933,9 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
 
     --setup header
     local headerTable = api.gui.comp.Table.new(3, 'NONE')
-    headerTable:setColWidth(0,150)
-    headerTable:setColWidth(1,87)
-    headerTable:setColWidth(2,63)
+    headerTable:setColWidth(0,175)
+    headerTable:setColWidth(1,85)
+    headerTable:setColWidth(2,60)
     headerTable:addRow({
         api.gui.comp.TextView.new(""),
         api.gui.comp.TextView.new(UIStrings.min),
@@ -943,10 +943,10 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
     menu.constraintTable:addRow({headerTable})
 
     local debounceTable = api.gui.comp.Table.new(4, 'NONE')
-    debounceTable:setColWidth(0,150)
-    debounceTable:setColWidth(1,62)
+    debounceTable:setColWidth(0,175)
+    debounceTable:setColWidth(1,60)
     debounceTable:setColWidth(2,25)
-    debounceTable:setColWidth(3,63)
+    debounceTable:setColWidth(3,60)
 
     local debounceMin = api.gui.comp.DoubleSpinBox.new()
     debounceMin:setMinimum(0,false)
