@@ -70,16 +70,16 @@ function timetableGUI.initStationTab()
     local stationOverview = api.gui.comp.TextView.new('StationOverview')
     menu.stationTabScrollArea = api.gui.comp.ScrollArea.new(stationOverview, "timetable.stationTabStationOverviewScrollArea")
     menu.stStations = api.gui.comp.Table.new(1, 'SINGLE')
-    menu.stationTabScrollArea:setMinimumSize(api.gui.util.Size.new(300, 700))
-    menu.stationTabScrollArea:setMaximumSize(api.gui.util.Size.new(300, 700))
+    menu.stationTabScrollArea:setMinimumSize(api.gui.util.Size.new(320, 720))
+    menu.stationTabScrollArea:setMaximumSize(api.gui.util.Size.new(320, 720))
     menu.stationTabScrollArea:setContent(menu.stStations)
     timetableGUI.stFillStations()
     UIState.floatingLayoutStationTab:addItem(menu.stationTabScrollArea,0,0)
 
     menu.stationTabLinesScrollArea = api.gui.comp.ScrollArea.new(api.gui.comp.TextView.new('LineOverview'), "timetable.stationTabLinesScrollArea")
     menu.stationTabLinesTable = api.gui.comp.Table.new(1, 'NONE')
-    menu.stationTabLinesScrollArea:setMinimumSize(api.gui.util.Size.new(799, 700))
-    menu.stationTabLinesScrollArea:setMaximumSize(api.gui.util.Size.new(799, 700))
+    menu.stationTabLinesScrollArea:setMinimumSize(api.gui.util.Size.new(880, 720))
+    menu.stationTabLinesScrollArea:setMaximumSize(api.gui.util.Size.new(880, 720))
     -- menu.stationTabLinesTable:setColWidth(0,23)
     -- menu.stationTabLinesTable:setColWidth(1,150)
 
@@ -211,8 +211,8 @@ function timetableGUI.initLineTable()
 
     menu.lineTable:setColWidth(1,240)
 
-    menu.scrollArea:setMinimumSize(api.gui.util.Size.new(300, 670))
-    menu.scrollArea:setMaximumSize(api.gui.util.Size.new(300, 670))
+    menu.scrollArea:setMinimumSize(api.gui.util.Size.new(320, 690))
+    menu.scrollArea:setMaximumSize(api.gui.util.Size.new(320, 690))
     menu.scrollArea:setContent(menu.lineTable)
 
     timetableGUI.fillLineTable()
@@ -227,8 +227,8 @@ function timetableGUI.initStationTable()
     else
         stationTableScrollOffset = api.type.Vec2i.new()
         menu.stationScrollArea = api.gui.comp.ScrollArea.new(api.gui.comp.TextView.new('stationScrollArea'), "timetable.stationScrollArea")
-        menu.stationScrollArea:setMinimumSize(api.gui.util.Size.new(500, 700))
-        menu.stationScrollArea:setMaximumSize(api.gui.util.Size.new(500, 700))
+        menu.stationScrollArea:setMinimumSize(api.gui.util.Size.new(560, 730))
+        menu.stationScrollArea:setMaximumSize(api.gui.util.Size.new(560, 730))
         UIState.boxlayout2:addItem(menu.stationScrollArea,0.5,0)
     end
 
@@ -245,8 +245,8 @@ function timetableGUI.initConstraintTable()
     else
         constraintTableScrollOffset = api.type.Vec2i.new()
         menu.scrollAreaConstraint = api.gui.comp.ScrollArea.new(api.gui.comp.TextView.new('scrollAreaConstraint'), "timetable.scrollAreaConstraint")
-        menu.scrollAreaConstraint:setMinimumSize(api.gui.util.Size.new(300, 700))
-        menu.scrollAreaConstraint:setMaximumSize(api.gui.util.Size.new(300, 700))
+        menu.scrollAreaConstraint:setMinimumSize(api.gui.util.Size.new(320, 730))
+        menu.scrollAreaConstraint:setMaximumSize(api.gui.util.Size.new(320, 730))
         UIState.boxlayout2:addItem(menu.scrollAreaConstraint,1,0)
     end
 
@@ -303,7 +303,7 @@ function timetableGUI.showLineMenu()
     menu.window:setMovable(true)
     menu.window:setPinButtonVisible(true)
     menu.window:setResizable(false)
-    menu.window:setSize(api.gui.util.Size.new(1100, 780))
+    menu.window:setSize(api.gui.util.Size.new(1202, 802))
     menu.window:setPosition(200,200)
     menu.window:onClose(function()
         menu.lineTableItems = {}
@@ -579,8 +579,8 @@ function timetableGUI.fillStationTable(index, bool)
         conditionString:setStyleClassList(local_style)
 
 
-        conditionString:setMinimumSize(api.gui.util.Size.new(285,50))
-        conditionString:setMaximumSize(api.gui.util.Size.new(285,50))
+        conditionString:setMinimumSize(api.gui.util.Size.new(360,50))
+        conditionString:setMaximumSize(api.gui.util.Size.new(360,50))
 
         menu.stationTable:addRow({stationNumber,stationNameTable, menu.lineImage[k], conditionString})
     end
@@ -794,24 +794,18 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
 
     --setup header
     local headerTable = api.gui.comp.Table.new(4, 'NONE')
-    headerTable:setColWidth(0,125)
-    headerTable:setColWidth(1,76)
+    headerTable:setColWidth(1,85)
     headerTable:setColWidth(2,50)
-    headerTable:setColWidth(3,48)
+    headerTable:setColWidth(3,50)
     headerTable:addRow({api.gui.comp.TextView.new(""),api.gui.comp.TextView.new(UIStrings.min),api.gui.comp.TextView.new(UIStrings.sec),addButton})
     menu.constraintTable:addRow({headerTable})
-
 
     -- setup arrival and departure content
     for k,v in pairs(conditions) do
         menu.constraintTable:addRow({api.gui.comp.Component.new("HorizontalLine")})
 
-
-        local linetable = api.gui.comp.Table.new(5, 'NONE')
         local arivalLabel =  api.gui.comp.TextView.new(UIStrings.arrival .. ":  ")
-
         arivalLabel:setMinimumSize(api.gui.util.Size.new(80, 30))
-        arivalLabel:setMaximumSize(api.gui.util.Size.new(80, 30))
 
         local arrivalMin = api.gui.comp.DoubleSpinBox.new()
         arrivalMin:setMinimum(0,false)
@@ -824,6 +818,8 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
         end)
 
+        local minSecSeparator = api.gui.comp.TextView.new(":")
+
         local arrivalSec = api.gui.comp.DoubleSpinBox.new()
         arrivalSec:setMinimum(0,false)
         arrivalSec:setMaximum(59,false)
@@ -835,7 +831,9 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
         end)
 
-        local deleteButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("X") ,true)
+        local deleteLabel = api.gui.comp.TextView.new("   X")
+        deleteLabel:setMinimumSize(api.gui.util.Size.new(50, 10))
+        local deleteButton = api.gui.comp.Button.new(deleteLabel, true)
         deleteButton:onClick(function()
             timetable.removeCondition(lineID, stationID, "ArrDep", k)
             timetableChanged = true
@@ -847,19 +845,23 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             end
         end)
 
+        local linetable = api.gui.comp.Table.new(5, 'NONE')
         linetable:addRow({
             arivalLabel,
             arrivalMin,
-            api.gui.comp.TextView.new(":"),
+            minSecSeparator,
             arrivalSec,
             deleteButton
         })
+        linetable:setColWidth(1, 60)
+        linetable:setColWidth(2, 25)
+        linetable:setColWidth(3, 60)
+        linetable:setColWidth(4, 50)
         menu.constraintTable:addRow({linetable})
 
         local departureLabel =  api.gui.comp.TextView.new(UIStrings.departure .. ":  ")
-
         departureLabel:setMinimumSize(api.gui.util.Size.new(80, 30))
-        departureLabel:setMaximumSize(api.gui.util.Size.new(80, 30))
+
         local departureMin = api.gui.comp.DoubleSpinBox.new()
         departureMin:setMinimum(0,false)
         departureMin:setMaximum(59,false)
@@ -870,6 +872,8 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             timetableGUI.initStationTable()
             timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
         end)
+
+        local minSecSeparator = api.gui.comp.TextView.new(":")
 
         local departureSec = api.gui.comp.DoubleSpinBox.new()
         departureSec:setMinimum(0,false)
@@ -882,19 +886,20 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
         end)
 
-
         local deletePlaceholder = api.gui.comp.TextView.new(" ")
-        deletePlaceholder:setMinimumSize(api.gui.util.Size.new(12, 30))
-        deletePlaceholder:setMaximumSize(api.gui.util.Size.new(12, 30))
 
         local linetable2 = api.gui.comp.Table.new(5, 'NONE')
         linetable2:addRow({
             departureLabel,
             departureMin,
-            api.gui.comp.TextView.new(":"),
+            minSecSeparator,
             departureSec,
             deletePlaceholder
         })
+        linetable2:setColWidth(1, 60)
+        linetable2:setColWidth(2, 25)
+        linetable2:setColWidth(3, 60)
+        linetable2:setColWidth(4, 50)
         menu.constraintTable:addRow({linetable2})
 
 
