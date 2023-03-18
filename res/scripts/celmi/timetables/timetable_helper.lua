@@ -250,7 +250,7 @@ function timetableHelper.getFrequencyString(line)
     if frequency == -1 then return "ERROR" end
     if frequency == -2 then return "--" end
 
-    return frequency.min .. ":" .. frequency.sec
+    return frequency.min .. ":" .. string.format("%02d", frequency.sec)
 end
 
 function timetableHelper.getFrequencyMinSec(line)
@@ -486,7 +486,7 @@ end
 ---@param cond table : TimetableCondition,
 ---@param type string, "ArrDep" |"debounce"
 -- returns String, ready to display in the UI
-function timetableHelper.conditionToString(cond, type)
+function timetableHelper.conditionToString(cond, lineID, type)
     if (not cond) or (not type) then return "" end
     if type =="ArrDep" then
         local arr = UIStrings.arr
@@ -504,10 +504,26 @@ function timetableHelper.conditionToString(cond, type)
     elseif type == "auto_debounce" then
         if not cond[1] then cond[1] = 0 end
         if not cond[2] then cond[2] = 0 end
-    return "Margin Time: " .. string.format("%02d", cond[1]) .. ":" .. string.format("%02d", cond[2])
+        local margin = "Margin Time:  " .. string.format("%02d", cond[1]) .. ":" .. string.format("%02d", cond[2])
+        local unbunch = timetableHelper.getAutoUnbunchFor(lineID, cond)
+        return margin .. "\n" .. unbunch
     else
         return type
     end
+end
+
+function timetableHelper.getAutoUnbunchFor(lineID, cond)
+    print("lineID" .. tostring(lineID))
+    local frequency = timetableHelper.getFrequencyMinSec(lineID)
+    print("type" .. type(frequency))
+    if type(frequency) == "table" then
+        local unbunchTime = (frequency.min - cond[1]) * 60 + frequency.sec - cond[2]
+        print("unbunchTime" .. tostring(unbunchTime))
+        if unbunchTime >= 0 then
+            return UIStrings.unbunchTime .. ": " .. string.format("%02d", math.floor(unbunchTime / 60)) .. ":" .. string.format("%02d", math.floor(unbunchTime % 60))
+        end
+    end
+    return UIStrings.unbunchTime .. ": --:--"
 end
 
 ---@param i number Index of Combobox,
