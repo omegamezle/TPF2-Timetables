@@ -775,7 +775,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
 
     -- setup add button
     local addButton = api.gui.comp.Button.new(api.gui.comp.TextView.new(UIStrings.add), true)
-    addButton:setGravity(1,0)
+    addButton:setGravity(-1,0)
     addButton:onClick(function()
         timetable.addCondition(lineID,stationID, {type = "ArrDep", ArrDep = {{0,0,0,0}}})
         timetableChanged = true
@@ -787,12 +787,33 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         end
     end)
 
+    -- setup deleteButton button
+    local deleteButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("Delete all"), true)
+    deleteButton:setGravity(1,0)
+    deleteButton:onClick(function()
+        deleteButton:setEnabled(false)
+
+        timetableGUI.popUp("Delete All?", function()
+            timetable.removeAllConditions(lineID, stationID, "ArrDep")
+            timetableChanged = true
+            clearConstraintWindowLaterHACK = function()
+                timetableGUI.initStationTable()
+                timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+                timetableGUI.clearConstraintWindow()
+                timetableGUI.makeArrDepWindow(lineID, stationID)
+            end
+            deleteButton:setEnabled(true)
+        end, function()
+            deleteButton:setEnabled(true)
+        end)
+    end)
+
     --setup header
     local headerTable = api.gui.comp.Table.new(4, 'NONE')
     headerTable:setColWidth(1,85)
     headerTable:setColWidth(2,50)
     headerTable:setColWidth(3,50)
-    headerTable:addRow({api.gui.comp.TextView.new(""),api.gui.comp.TextView.new(UIStrings.min),api.gui.comp.TextView.new(UIStrings.sec),addButton})
+    headerTable:addRow({addButton,api.gui.comp.TextView.new(UIStrings.min),api.gui.comp.TextView.new(UIStrings.sec),deleteButton})
     menu.constraintTable:addRow({headerTable})
 
     -- setup arrival and departure content
@@ -998,6 +1019,34 @@ end
 --------------------- OTHER ---------------------------------
 -------------------------------------------------------------
 
+function timetableGUI.popUp(title, onYes, onNo)
+    local popUpTable = api.gui.comp.Table.new(2, 'NONE')
+    local yesButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("Yes"), true)
+    local noButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("No"), true)
+    popUpTable:addRow({yesButton, noButton})
+
+    local popUp = api.gui.comp.Window.new(title, popUpTable)
+    local position = api.gui.util.getMouseScreenPos()
+    popUp:setPosition(position.x, position.y)
+    popUp:addHideOnCloseHandler()
+
+    local yesPressed = false
+    popUp:onClose(function()
+        if yesPressed then
+            onYes()
+        else
+            onNo()
+        end
+    end)
+
+    yesButton:onClick(function()
+        yesPressed = true
+        popUp:close()
+    end)
+    noButton:onClick(function()
+        popUp:close()
+    end)
+end
 
 function timetableGUI.timetableCoroutine()
     local lastUpdate = -1

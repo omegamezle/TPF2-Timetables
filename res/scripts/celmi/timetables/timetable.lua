@@ -216,6 +216,15 @@ function timetable.updateDebounce(line, station, indexKey, value, debounceType)
     end
 end
 
+function timetable.removeAllConditions(line, station, type)
+    if not(line and station) or (not (timetableObject[line]
+       and timetableObject[line].stations[station])) then
+        return -1
+    end
+
+    timetableObject[line].stations[station].conditions[type] = {}
+end
+
 function timetable.removeCondition(line, station, type, index)
     if not(line and station and index) or (not (timetableObject[line]
        and timetableObject[line].stations[station])) then
