@@ -5,7 +5,7 @@ local gui = require "gui"
 
 local clockstate = nil
 
-local menu = {window = nil, lineTableItems = {}}
+local menu = {window = nil, lineTableItems = {}, popUp = nil}
 
 local timetableGUI = {}
 
@@ -864,18 +864,24 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
         end)
 
-        local deleteLabel = api.gui.comp.TextView.new("    X")
+        local deleteLabel = api.gui.comp.TextView.new("     X")
         deleteLabel:setMinimumSize(api.gui.util.Size.new(60, 10))
         local deleteButton = api.gui.comp.Button.new(deleteLabel, true)
         deleteButton:onClick(function()
-            timetable.removeCondition(lineID, stationID, "ArrDep", k)
-            timetableChanged = true
-            clearConstraintWindowLaterHACK = function()
-                timetableGUI.initStationTable()
-                timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-                timetableGUI.clearConstraintWindow()
-                timetableGUI.makeArrDepWindow(lineID, stationID)
-            end
+            deleteButton:setEnabled(false)
+            timetableGUI.popUp("Delete?", function()
+                timetable.removeCondition(lineID, stationID, "ArrDep", k)
+                timetableChanged = true
+                clearConstraintWindowLaterHACK = function()
+                    timetableGUI.initStationTable()
+                    timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+                    timetableGUI.clearConstraintWindow()
+                    timetableGUI.makeArrDepWindow(lineID, stationID)
+                end
+                deleteButton:setEnabled(true)
+            end, function()
+                deleteButton:setEnabled(true)
+            end)
         end)
 
         local linetable = api.gui.comp.Table.new(5, 'NONE')
@@ -919,7 +925,19 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
         end)
 
-        local deletePlaceholder = api.gui.comp.TextView.new(" ")
+        local insertLabel = api.gui.comp.TextView.new("     +")
+        insertLabel:setMinimumSize(api.gui.util.Size.new(60, 10))
+        local insertButton = api.gui.comp.Button.new(insertLabel, true)
+        insertButton:onClick(function()
+            timetable.insertArrDepCondition(lineID, stationID, k, {0,0,0,0})
+            timetableChanged = true
+            clearConstraintWindowLaterHACK = function()
+                timetableGUI.initStationTable()
+                timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+                timetableGUI.clearConstraintWindow()
+                timetableGUI.makeArrDepWindow(lineID, stationID)
+            end
+        end)
 
         local linetable2 = api.gui.comp.Table.new(5, 'NONE')
         linetable2:addRow({
@@ -927,7 +945,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             departureMin,
             minSecSeparator,
             departureSec,
-            deletePlaceholder
+            insertButton
         })
         linetable2:setColWidth(1, 60)
         linetable2:setColWidth(2, 25)
@@ -1037,31 +1055,35 @@ end
 -------------------------------------------------------------
 
 function timetableGUI.popUp(title, onYes, onNo)
+    if menu.popUp then
+        menu.popUp:close()
+    end
     local popUpTable = api.gui.comp.Table.new(2, 'NONE')
     local yesButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("Yes"), true)
     local noButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("No"), true)
     popUpTable:addRow({yesButton, noButton})
 
-    local popUp = api.gui.comp.Window.new(title, popUpTable)
+    menu.popUp = api.gui.comp.Window.new(title, popUpTable)
     local position = api.gui.util.getMouseScreenPos()
-    popUp:setPosition(position.x, position.y)
-    popUp:addHideOnCloseHandler()
+    menu.popUp:setPosition(position.x, position.y)
+    menu.popUp:addHideOnCloseHandler()
 
     local yesPressed = false
-    popUp:onClose(function()
+    menu.popUp:onClose(function()
         if yesPressed then
             onYes()
         else
             onNo()
         end
+        menu.popUp = nil
     end)
 
     yesButton:onClick(function()
         yesPressed = true
-        popUp:close()
+        menu.popUp:close()
     end)
     noButton:onClick(function()
-        popUp:close()
+        menu.popUp:close()
     end)
 end
 
