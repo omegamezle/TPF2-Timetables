@@ -188,6 +188,20 @@ function timetable.addCondition(line, stationNumber, condition)
     end
 end
 
+function timetable.insertArrDepCondition(line, station, indexKey, condition)
+    if not(line and station and indexKey and condition) then return -1 end
+    if timetableObject[line] and
+       timetableObject[line].stations[station] and
+       timetableObject[line].stations[station].conditions and
+       timetableObject[line].stations[station].conditions.ArrDep and
+       timetableObject[line].stations[station].conditions.ArrDep[indexKey] then
+        table.insert(timetableObject[line].stations[station].conditions.ArrDep, indexKey, condition)
+        return 0
+    else
+        return -2
+    end
+end
+
 function timetable.updateArrDep(line, station, indexKey, indexValue, value)
     if not (line and station and indexKey and indexValue and value) then return -1 end
     if timetableObject[line] and
@@ -214,6 +228,15 @@ function timetable.updateDebounce(line, station, indexKey, value, debounceType)
     else
         return -2
     end
+end
+
+function timetable.removeAllConditions(line, station, type)
+    if not(line and station) or (not (timetableObject[line]
+       and timetableObject[line].stations[station])) then
+        return -1
+    end
+
+    timetableObject[line].stations[station].conditions[type] = {}
 end
 
 function timetable.removeCondition(line, station, type, index)
