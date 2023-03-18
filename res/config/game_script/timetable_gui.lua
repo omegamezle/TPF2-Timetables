@@ -743,14 +743,10 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     separationCombo:setGravity(1,0)
     
     -- setup generate button
-    local generateButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("Generate"), true)
-    generateButton:setGravity(1, 0)
-    generateButton:onClick(function()
-        -- preparation
-        if #conditions ~= 1 then return end                        -- template condition not found
+    local generate = function()
         if separationCombo:getCurrentIndex() == -1 then return end  -- no separation selected
-        templateArrDep = conditions[1]
-        
+        local templateArrDep = conditions[1]
+
         -- generate recurring conditions
         local separation = separationList[separationCombo:getCurrentIndex() + 1]
         for i = 1, 60 / separation - 1 do
@@ -764,6 +760,27 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
             timetableGUI.clearConstraintWindow()
             timetableGUI.makeArrDepWindow(lineID, stationID)
+        end
+    end
+    local generateButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("Generate"), true)
+    generateButton:setGravity(1, 0)
+    generateButton:onClick(function()
+        -- preparation
+        if #conditions < 1 then
+        elseif #conditions > 1 then
+            generateButton:setEnabled(false)
+            -- "Regenerate will replace current timetable"
+            timetableGUI.popUp("Override?", function()
+                condition1 = conditions[1]
+                timetable.removeAllConditions(lineID, stationID, "ArrDep")
+                timetable.addCondition(lineID, stationID, {type = "ArrDep", ArrDep = {condition1}})
+                generate()
+                generateButton:setEnabled(true)
+            end, function()
+                generateButton:setEnabled(true)
+            end)
+        else
+            generate()
         end
     end)
 
@@ -788,8 +805,8 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     end)
 
     -- setup deleteButton button
-    local deleteButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("Delete all"), true)
-    deleteButton:setGravity(1,0)
+    local deleteButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("X All"), true)
+    deleteButton:setGravity(-1,0)
     deleteButton:onClick(function()
         deleteButton:setEnabled(false)
 
@@ -811,8 +828,8 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     --setup header
     local headerTable = api.gui.comp.Table.new(4, 'NONE')
     headerTable:setColWidth(1,85)
-    headerTable:setColWidth(2,50)
-    headerTable:setColWidth(3,50)
+    headerTable:setColWidth(2,60)
+    headerTable:setColWidth(3,60)
     headerTable:addRow({addButton,api.gui.comp.TextView.new(UIStrings.min),api.gui.comp.TextView.new(UIStrings.sec),deleteButton})
     menu.constraintTable:addRow({headerTable})
 
@@ -821,7 +838,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         menu.constraintTable:addRow({api.gui.comp.Component.new("HorizontalLine")})
 
         local arivalLabel =  api.gui.comp.TextView.new(UIStrings.arrival .. ":  ")
-        arivalLabel:setMinimumSize(api.gui.util.Size.new(80, 30))
+        arivalLabel:setMinimumSize(api.gui.util.Size.new(75, 30))
 
         local arrivalMin = api.gui.comp.DoubleSpinBox.new()
         arrivalMin:setMinimum(0,false)
@@ -847,8 +864,8 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
         end)
 
-        local deleteLabel = api.gui.comp.TextView.new("   X")
-        deleteLabel:setMinimumSize(api.gui.util.Size.new(50, 10))
+        local deleteLabel = api.gui.comp.TextView.new("    X")
+        deleteLabel:setMinimumSize(api.gui.util.Size.new(60, 10))
         local deleteButton = api.gui.comp.Button.new(deleteLabel, true)
         deleteButton:onClick(function()
             timetable.removeCondition(lineID, stationID, "ArrDep", k)
@@ -872,11 +889,11 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         linetable:setColWidth(1, 60)
         linetable:setColWidth(2, 25)
         linetable:setColWidth(3, 60)
-        linetable:setColWidth(4, 50)
+        linetable:setColWidth(4, 60)
         menu.constraintTable:addRow({linetable})
 
         local departureLabel =  api.gui.comp.TextView.new(UIStrings.departure .. ":  ")
-        departureLabel:setMinimumSize(api.gui.util.Size.new(80, 30))
+        departureLabel:setMinimumSize(api.gui.util.Size.new(75, 30))
 
         local departureMin = api.gui.comp.DoubleSpinBox.new()
         departureMin:setMinimum(0,false)
@@ -915,7 +932,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         linetable2:setColWidth(1, 60)
         linetable2:setColWidth(2, 25)
         linetable2:setColWidth(3, 60)
-        linetable2:setColWidth(4, 50)
+        linetable2:setColWidth(4, 60)
         menu.constraintTable:addRow({linetable2})
 
 
