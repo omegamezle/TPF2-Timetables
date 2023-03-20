@@ -410,9 +410,7 @@ end
 
 function timetable.waitedMinimumTime(stopInfo, arrivalTime, time)
     local wait = stopInfo.minWaitingTime
-
-    local departureTime = arrivalTime + wait
-    return timetable.afterDepartureTime(arrivalTime, departureTime, time)
+    return time >= arrivalTime + wait
 end
 
 function timetable.waitedMaximumTime(stopInfo, arrivalTime, time)
@@ -420,7 +418,7 @@ function timetable.waitedMaximumTime(stopInfo, arrivalTime, time)
     if wait == -1 then return false end
 
     local departureTime = arrivalTime + wait
-    return timetable.afterDepartureTime(arrivalTime, departureTime, time)
+    return time >= arrivalTime + wait
 end
 
 function timetable.departIfReadyDebounce(vehicle, vehicleInfo, vehicles, time, line, stop)
@@ -515,20 +513,36 @@ end
 ---@param constraint table in format like: {9,0,59,0}
 ---@param currentTime number in seconds
 function timetable.afterDepartureConstraint(arrivalTime, constraint, currentTime)
-    arrivalTime = arrivalTime % 3600
-    currentTime = currentTime % 3600
-
-    local departureTime = (60 * constraint[3]) + constraint[4]
-    return timetable.afterDepartureTime(arrivalTime, departureTime, currentTime)
+    local arrivalSlot = (60 * constraint[1]) + constraint[2]
+    local departureSlot = (60 * constraint[3]) + constraint[4]
+    return timetable.afterDepartureTime(arrivalSlot, departureSlot, arrivalTime, currentTime)
 end
 
-function timetable.afterDepartureTime(arrivalTime, departureTime, currentTime)
-    if arrivalTime <= departureTime then
+function timetable.afterDepartureTime(arrivalSlot, departureSlot, arrivalTime, currentTime)
+    if not timetable.afterArrivalSlot(arrivalSlot, arrivalTime) then
+        local waitTime = (arrivalSlot - arrivalTime) % 3600
+        if (arrivalTime + waitTime) > currentTime then
+            return false
+        end
+    end
+
+    currentTime = currentTime % 3600
+    if arrivalSlot <= departureSlot then
         -- Eg. the arrival time is 10:00 and the departure is 12:00
-        return arrivalTime > currentTime or currentTime >= departureTime
+        return currentTime < arrivalSlot or departureSlot <= currentTime
     else
         -- Eg. the arrival time is 59:00 and the departure is 01:00
-        return arrivalTime > currentTime and currentTime >= departureTime
+        return currentTime < arrivalSlot and departureSlot <= currentTime
+    end
+end
+
+function timetable.afterArrivalSlot(arrivalSlot, arrivalTime)
+    local furthestFromArrivalSlot = (arrivalSlot + (30 * 60)) % 3600
+    arrivalTime = arrivalTime % 3600
+    if arrivalSlot < furthestFromArrivalSlot then
+        return arrivalSlot <= arrivalTime and arrivalTime < furthestFromArrivalSlot
+    else
+        return not(furthestFromArrivalSlot <= arrivalTime and arrivalTime < arrivalSlot)
     end
 end
 
