@@ -766,6 +766,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     generateButton:setGravity(1, 0)
     generateButton:onClick(function()
         -- preparation
+        conditions = timetable.getConditions(lineID,stationID, "ArrDep")
         if #conditions < 1 then
         elseif #conditions > 1 then
             generateButton:setEnabled(false)
