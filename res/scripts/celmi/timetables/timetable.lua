@@ -344,7 +344,6 @@ function timetable.readyToDepartArrDep(constraints, arrivalTime, time, line, sto
     end
 
     if timetable.readyToDepartArrDepInner(constraints, arrivalTime, time, line, stop, vehicle) then
-        timetableObject[line].stations[stop].vehiclesWaiting[vehicle] = nil
         return true
     end
     return false
@@ -575,7 +574,7 @@ end
 ---@param time number in seconds
 ---@param usedConstraints table in format like: {{30,0,59,0}, {9,0,59,0}}
 ---@return table closestConstraint example: {30,0,59,0}
-function timetable.getNextDepartureConstraint(constraints, time, usedConstraints)
+function timetable.getNextDepartureConstraint(constraints, arrivalTime, waitingVehicles)
     -- Put the constraints in chronological order by arrival time
     table.sort(constraints, function(a, b)
         local aTime = timetable.getArrivalTimeFrom(a)
@@ -586,8 +585,8 @@ function timetable.getNextDepartureConstraint(constraints, time, usedConstraints
     -- Find the distance from the arrival time
     local res = {diff = 3601, value = nil}
     for index, constraint in pairs(constraints) do
-        local arrTime = timetable.getArrivalTimeFrom(constraint)
-        local diff = timetable.getTimeDifference(arrTime, time % 3600)
+        local arrivalSlot = timetable.getArrivalTimeFrom(constraint)
+        local diff = timetable.getTimeDifference(arrivalSlot, arrivalTime % 3600)
 
         if (diff < res.diff) then
             res = {diff = diff, index = index}
@@ -597,6 +596,23 @@ function timetable.getNextDepartureConstraint(constraints, time, usedConstraints
     -- Return nil when there are no contraints
     if not res.index then return nil end
 
+    -- Split vehiclesWaiting by whether they have departed
+    local waitingConstraints = {}
+    local departedConstraints = {}
+    if #constraints == 1 then
+        for vehicle, _ in pairs(waitingVehicles) do
+            waitingVehicles[vehicle] = nil
+        end
+    else
+        for vehicle, constraint in pairs(waitingVehicles) do
+            if arrivalTime <= constraint.departureTime then
+                waitingConstraints[vehicle] = constraint.departureConstraint
+            else
+                departedConstraints[vehicle] = constraint.departureConstraint
+            end
+        end
+    end
+
     -- Find if the constraint with the closest arrival time is currently being used
     -- If true, find the next consecutive available constraint
     for i = res.index, #constraints + res.index - 1 do
@@ -604,8 +620,25 @@ function timetable.getNextDepartureConstraint(constraints, time, usedConstraints
         local normalisedIndex = ((i - 1) % #constraints) + 1
 
         local constraint = constraints[normalisedIndex]
-        local found = false
-        if not timetable.arrayContainsConstraint(constraint, usedConstraints) then
+        local constraintAvailable = true
+        if timetable.arrayContainsConstraint(constraint, waitingConstraints) then
+            constraintAvailable = false
+            -- if the nearest constraint is still waiting, then all departedConstraints can be removed
+            for vehicle, _ in pairs(departedConstraints) do
+                vehiclesWaiting[vehicle] = nil
+            end
+        else
+            -- if the nearest constraint is a departed, all other departedConstraints can be removed
+            for vehicle, departedConstraint in pairs(departedConstraints) do
+                if timetable.constraintsEqual(constraint, departedConstraint) then
+                    constraintAvailable = false
+                else
+                    waitingVehicles[vehicle] = nil
+                end
+            end
+        end
+
+        if constraintAvailable then
             return constraint
         end
     end
@@ -616,18 +649,25 @@ end
 
 function timetable.arrayContainsConstraint(constraint, array)
     for key, item in pairs(array) do
-        if item == constraint then
-            return true
-        elseif (
-            item[1] == constraint[1] and 
-            item[2] == constraint[2] and
-            item[3] == constraint[3] and
-            item[4] == constraint[4]
-        ) then
+        if timetable.constraintsEqual(item, constraint) then
             return true
         end
     end
 
+    return false
+end
+
+function timetable.constraintsEqual(constraint1, constraint2)
+    if constraint1 == constraint2 then
+        return true
+    elseif (
+        constraint1[1] == constraint2[1] and 
+        constraint1[2] == constraint2[2] and
+        constraint1[3] == constraint2[3] and
+        constraint1[4] == constraint2[4]
+    ) then
+        return true
+    end
     return false
 end
 

@@ -47,12 +47,12 @@ timetableTests[#timetableTests + 1] = function()
     x = timetable.getNextDepartureConstraint({},1200, {})
     assert(x == nil, "should return nil")
 
-    local a = {30,0,59,0}
-    x = timetable.getNextDepartureConstraint({a,{9,0,59,0} },1200, {a})
+    local a = {departureConstraint={30,0,59,0}, departureTime=3540}
+    x = timetable.getNextDepartureConstraint({{30,0,59,0},{9,0,59,0} },1200, {a})
     assert(x[1] == 9 and x[2] == 0 and x[3] == 59 and x[4] == 0, "should choose the only available time constraint")
-    x = timetable.getNextDepartureConstraint({a,{30,0,59,0} },1200, {a})
+    x = timetable.getNextDepartureConstraint({{30,0,59,0},{30,0,59,0} },1200, {a})
     assert(x[1] == 30 and x[2] == 0 and x[3] == 59 and x[4] == 0, "should choose the only available time constraint")
-    x = timetable.getNextDepartureConstraint({a },1200, {a})
+    x = timetable.getNextDepartureConstraint({{30,0,59,0}},1200, {a})
     assert(x[1] == 30 and x[2] == 0 and x[3] == 59 and x[4] == 0, "should still return the constraint")
 end
 
