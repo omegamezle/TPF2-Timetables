@@ -333,7 +333,6 @@ function timetable.departIfReadyArrDep(vehicle, vehicleInfo, time, line, stop)
         local arrivalTime = math.floor(vehicleInfo.doorsTime / 1000000)
         if timetable.readyToDepartArrDep(constraints, arrivalTime, time, line, stop, vehicle) then
             timetableHelper.departVehicle(vehicle)
-            timetableObject[line].stations[stop].vehiclesWaiting[vehicle] = nil
         end
     end
 end
@@ -343,6 +342,14 @@ function timetable.readyToDepartArrDep(constraints, arrivalTime, time, line, sto
         timetableObject[line].stations[stop].vehiclesWaiting = {}
     end
 
+    if timetable.readyToDepartArrDepInner(constraints, arrivalTime, time, line, stop, vehicle) then
+        timetableObject[line].stations[stop].vehiclesWaiting[vehicle] = nil
+        return true
+    end
+    return false
+end   
+
+function timetable.readyToDepartArrDepInner(constraints, arrivalTime, time, line, stop, vehicle)
     local vehiclesWaiting = timetableObject[line].stations[stop].vehiclesWaiting
     local departureConstraint = nil
     local validDepartureConstraint = nil
