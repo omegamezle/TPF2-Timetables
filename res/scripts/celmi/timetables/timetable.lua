@@ -13,7 +13,8 @@ stationInfo = {
     conditions = {condition :: Condition},
     vehiclesWaiting = {
         vehicleNumber = {
-            constraint
+            departureConstraint = {}
+            departureTime = 1 :: int
         }
     }
 }
@@ -347,38 +348,60 @@ function timetable.readyToDepartArrDep(constraints, arrivalTime, time, line, sto
         return true
     end
     return false
-end   
+end
 
-function timetable.readyToDepartArrDepInner(constraints, arrivalTime, time, line, stop, vehicle)
+function timetable.getWaitTime(arrivalSlot, departureSlot, arrivalTime)
+    if not timetable.afterArrivalSlot(arrivalSlot, arrivalTime) then
+        local waitTime = (departureSlot - arrivalSlot) % 3600
+        return waitTime + (arrivalSlot - arrivalTime) % 3600
+    end
+    if not timetable.afterDepartureSlot(arrivalSlot, departureSlot, arrivalTime) then
+        return (departureSlot - arrivalTime) % 3600
+    end
+    return 0
+end
+
+function timetable.getDepartureTime(constraint, stopInfo, arrivalTime)
+    local arrivalSlot = (60 * constraint[1]) + constraint[2]
+    local departureSlot = (60 * constraint[3]) + constraint[4]
+    local waitTime = timetable.getWaitTime(arrivalSlot, departureSlot, arrivalTime)
+
+    if timetable.getMinWaitEnabled(line) then
+        if waitTime < stopInfo.minWaitingTime then
+            waitTime = stopInfo.minWaitingTime
+        end
+    end
+    if timetable.getMaxWaitEnabled(line) then
+        if waitTime > stopInfo.maxWaitingTime then
+            waitTime = stopInfo.maxWaitingTime
+        end
+    end
+
+    return arrivalTime + waitTime
+end
+
+function timetable.readyToDepartArrDepInner(constraints, arrivalTime, currentTime, line, stop, vehicle)
     local vehiclesWaiting = timetableObject[line].stations[stop].vehiclesWaiting
     local departureConstraint = nil
+    local departureTime = nil
     local validDepartureConstraint = nil
     if vehiclesWaiting[vehicle] then
-        departureConstraint = vehiclesWaiting[vehicle]
+        departureConstraint = vehiclesWaiting[vehicle].departureConstraint
+        departureTime = vehiclesWaiting[vehicle].departureTime
         validDepartureConstraint = timetable.arrayContainsConstraint(departureConstraint, constraints)
     end
     if not validDepartureConstraint then
+        local lineInfo = timetableHelper.getLineInfo(line)
+        local stopInfo = lineInfo.stops[stop]
         departureConstraint = timetable.getNextDepartureConstraint(constraints, arrivalTime, vehiclesWaiting)
-        vehiclesWaiting[vehicle] = departureConstraint
+        departureTime = timetable.getDepartureTime(departureConstraint, stopInfo, arrivalTime)
+        vehiclesWaiting[vehicle] = {
+            departureConstraint = departureConstraint,
+            departureTime = departureTime
+        }
     end
 
-
-    local lineInfo = timetableHelper.getLineInfo(line)
-    local stopInfo = lineInfo.stops[stop]
-
-    if timetable.afterDepartureConstraint(arrivalTime, departureConstraint, time) then
-        if timetable.getMinWaitEnabled(line) then
-            return timetable.waitedMinimumTime(stopInfo, arrivalTime, time)
-        else
-            return true
-        end
-    else
-        if timetable.getMaxWaitEnabled(line) then
-            return timetable.waitedMaximumTime(stopInfo, arrivalTime, time)
-        else
-            return false
-        end
-    end
+    return timetable.afterDepartureTime(departureTime, currentTime)
 end
 
 function timetable.setMinWaitEnabled(line, value)
@@ -413,19 +436,6 @@ function timetable.getMaxWaitEnabled(line)
     end
 
     return false
-end
-
-function timetable.waitedMinimumTime(stopInfo, arrivalTime, time)
-    local wait = stopInfo.minWaitingTime
-    return time >= arrivalTime + wait
-end
-
-function timetable.waitedMaximumTime(stopInfo, arrivalTime, time)
-    local wait = stopInfo.maxWaitingTime
-    if wait == -1 then return false end
-
-    local departureTime = arrivalTime + wait
-    return time >= arrivalTime + wait
 end
 
 function timetable.departIfReadyDebounce(vehicle, vehicleInfo, vehicles, time, line, stop)
@@ -515,32 +525,8 @@ end
 
 -------------- UTILS FUNCTIONS ----------
 
---- This function returns true if the train is before its departure time and after its arrival time
----@param arrivalTime number in seconds
----@param constraint table in format like: {9,0,59,0}
----@param currentTime number in seconds
-function timetable.afterDepartureConstraint(arrivalTime, constraint, currentTime)
-    local arrivalSlot = (60 * constraint[1]) + constraint[2]
-    local departureSlot = (60 * constraint[3]) + constraint[4]
-    return timetable.afterDepartureTime(arrivalSlot, departureSlot, arrivalTime, currentTime)
-end
-
-function timetable.afterDepartureTime(arrivalSlot, departureSlot, arrivalTime, currentTime)
-    if not timetable.afterArrivalSlot(arrivalSlot, arrivalTime) then
-        local waitTime = (arrivalSlot - arrivalTime) % 3600
-        if (arrivalTime + waitTime) > currentTime then
-            return false
-        end
-    end
-
-    currentTime = currentTime % 3600
-    if arrivalSlot <= departureSlot then
-        -- Eg. the arrival time is 10:00 and the departure is 12:00
-        return currentTime < arrivalSlot or departureSlot <= currentTime
-    else
-        -- Eg. the arrival time is 59:00 and the departure is 01:00
-        return currentTime < arrivalSlot and departureSlot <= currentTime
-    end
+function timetable.afterDepartureTime(departureTime, currentTime)
+    return departureTime <= currentTime
 end
 
 function timetable.afterArrivalSlot(arrivalSlot, arrivalTime)
@@ -550,6 +536,17 @@ function timetable.afterArrivalSlot(arrivalSlot, arrivalTime)
         return arrivalSlot <= arrivalTime and arrivalTime < furthestFromArrivalSlot
     else
         return not(furthestFromArrivalSlot <= arrivalTime and arrivalTime < arrivalSlot)
+    end
+end
+
+function timetable.afterDepartureSlot(arrivalSlot, departureSlot, arrivalTime)
+    arrivalTime = arrivalTime % 3600
+    if arrivalSlot <= departureSlot then
+        -- Eg. the arrival time is 10:00 and the departure is 12:00
+        return arrivalTime < arrivalSlot or departureSlot <= arrivalTime
+    else
+        -- Eg. the arrival time is 59:00 and the departure is 01:00
+        return arrivalTime < arrivalSlot and departureSlot <= arrivalTime
     end
 end
 
