@@ -444,6 +444,7 @@ function timetable.departIfReadyDebounce(vehicle, vehicleInfo, vehicles, time, l
 
     local previousDepartureTime = timetableHelper.getPreviousDepartureTime(stop, vehicles)
     local condition = timetable.getConditions(line, stop, "debounce")
+    if condition == -1 then condition = {0, 0} end
     if not condition[1] then condition[1] = 0 end
     if not condition[2] then condition[2] = 0 end
 
@@ -467,6 +468,7 @@ function timetable.departIfReadyAutoDebounce(vehicle, vehicleInfo, vehicles, tim
     if not frequency then return end
 
     local condition = timetable.getConditions(line, stop, "auto_debounce")
+    if condition == -1 then condition = {1, 0} end
     if not condition[1] then condition[1] = 1 end
     if not condition[2] then condition[2] = 0 end
     local nextDepartureTime = previousDepartureTime + frequency - (condition[1]*60 + condition[2])

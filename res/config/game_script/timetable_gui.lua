@@ -647,6 +647,7 @@ function timetableGUI.fillConstraintTable(index,lineID)
         local constraintType = timetableHelper.constraintIntToString(i)
         timetable.setConditionType(lineID, index, constraintType)
         conditions = timetable.getConditions(lineID, index, constraintType)
+        if conditions == -1 then return end
         if constraintType == "debounce" then
             if not conditions[1] then conditions[1] = 0 end
             if not conditions[2] then conditions[2] = 0 end
@@ -692,6 +693,7 @@ end
 function timetableGUI.makeArrDepWindow(lineID, stationID)
     if not menu.constraintTable then return end
     local conditions = timetable.getConditions(lineID,stationID, "ArrDep")
+    if conditions == -1 then return end
 
     -- minimum maximum setting
     local minButtonImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
@@ -767,6 +769,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     generateButton:onClick(function()
         -- preparation
         conditions = timetable.getConditions(lineID,stationID, "ArrDep")
+        if conditions == -1 then return end
         if #conditions < 1 then
         elseif #conditions > 1 then
             generateButton:setEnabled(false)
@@ -963,15 +966,17 @@ end
 function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
     if not menu.constraintTable then return end
     local frequency = timetableHelper.getFrequencyMinSec(lineID)
-    local condition2 = timetable.getConditions(lineID,stationID, debounceType)
+    local condition = timetable.getConditions(lineID,stationID, debounceType)
+    if condition == -1 then return end
     local autoDebounceMin = nil
     local autoDebounceSec = nil
 
     local updateAutoDebounce = function()
         if debounceType == "auto_debounce" then
-            condition2 = timetable.getConditions(lineID, stationID, debounceType)
-            if type(frequency) == "table" and autoDebounceMin and autoDebounceSec and condition2 and condition2[1] and condition2[2] then
-                local unbunchTime = (frequency.min - condition2[1]) * 60 + frequency.sec - condition2[2]
+            condition = timetable.getConditions(lineID, stationID, debounceType)
+            if condition == -1 then return end
+            if type(frequency) == "table" and autoDebounceMin and autoDebounceSec and condition and condition[1] and condition[2] then
+                local unbunchTime = (frequency.min - condition[1]) * 60 + frequency.sec - condition[2]
                 if unbunchTime >= 0 then
                     autoDebounceMin:setText(tostring(math.floor(unbunchTime / 60)))
                     autoDebounceSec:setText(tostring(math.floor(unbunchTime % 60)))
@@ -1015,8 +1020,8 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
         updateAutoDebounce()
     end)
 
-    if condition2 and condition2[1] then
-        debounceMin:setValue(condition2[1],false)
+    if condition and condition[1] then
+        debounceMin:setValue(condition[1],false)
     end
 
 
@@ -1032,8 +1037,8 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
         updateAutoDebounce()
     end)
 
-    if condition2 and condition2[2] then
-        debounceSec:setValue(condition2[2],false)
+    if condition and condition[2] then
+        debounceSec:setValue(condition[2],false)
     end
 
     local unbunchTimeHeader = api.gui.comp.TextView.new(UIStrings.unbunch_time .. ":")
