@@ -15,6 +15,8 @@ Timetables are only working when the checkbox on the line overview is ticked.
 [url=https://www.youtube.com/watch?v=DFCW1PTCoO4]Link[/url]
 [h3]German[/h3]
 [url=https://www.youtube.com/watch?v=ykh5ttBoTAs]Link[/url]
+[h3]Advanced Timetabling for Local/Express[h3]
+[url=https://steamcommunity.com/sharedfiles/filedetails/?id=2528355010]Link[/url]
 
 [h2]Updates from the original mod[/h2]
 You can view the original mod [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2408373260]here[/url]
@@ -79,6 +81,8 @@ Damit die Fahrpläne funktionieren muss die kleine Checkbox auf der Linienübers
 [url=https://www.youtube.com/watch?v=DFCW1PTCoO4]Link[/url]
 [h3]Deutsch[/h3]
 [url=https://www.youtube.com/watch?v=ykh5ttBoTAs]Link[/url]
+[h3]Fahrplanstruktur für Nahverkehrs- und Schnellzüge[h3]
+[url=https://steamcommunity.com/sharedfiles/filedetails/?id=2528355010]Link[/url]
 
 [h2]Updates from the original mod[/h2]
 Sie können den Original-Mod [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2408373260]hier ansehen[/url]
