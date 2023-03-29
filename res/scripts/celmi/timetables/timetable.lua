@@ -491,6 +491,11 @@ end
 function timetable.setHasTimetable(line, bool)
     if timetableObject[line] then
         timetableObject[line].hasTimetable = bool
+        if bool == false and timetableObject[line].stations then
+            for k, v in pairs(timetableObject[line].stations) do
+                timetableObject[line].stations[k].vehiclesWaiting = {}
+            end
+        end
     else
         timetableObject[line] = {stations = {} , hasTimetable = bool}
     end
