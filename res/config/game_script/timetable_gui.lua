@@ -232,10 +232,12 @@ function timetableGUI.initStationTable()
         UIState.boxlayout2:addItem(menu.stationScrollArea,0.5,0)
     end
 
+    menu.stationTableHeader = api.gui.comp.Table.new(1, 'NONE')
     menu.stationTable = api.gui.comp.Table.new(4, 'SINGLE')
     menu.stationTable:setColWidth(0,40)
     menu.stationTable:setColWidth(1,120)
-    menu.stationScrollArea:setContent(menu.stationTable)
+    menu.stationTableHeader:addRow({menu.stationTable})
+    menu.stationScrollArea:setContent(menu.stationTableHeader)
 end
 
 function timetableGUI.initConstraintTable()
@@ -491,13 +493,8 @@ function timetableGUI.fillStationTable(index, bool)
 
     UIState.currentlySelectedLineTableIndex = index
     local lineID = timetableHelper.getAllLines()[index+1].id
-
-
-    local header1 = api.gui.comp.TextView.new(UIStrings.frequency .. " " .. timetableHelper.getFrequencyString(lineID))
-    local header2 = api.gui.comp.TextView.new("")
-    local header3 = api.gui.comp.TextView.new("")
-    local header4 = api.gui.comp.TextView.new("")
-    menu.stationTable:setHeader({header1,header2, header3, header4})
+    local headerTable = timetableGUI.stationTableHeader(lineID)
+    menu.stationTableHeader:setHeader({headerTable})
 
     local stationLegTime = timetableHelper.getLegTimes(lineID)
     --iterate over all stations to display them
@@ -607,6 +604,77 @@ function timetableGUI.fillStationTable(index, bool)
     end)
 end
 
+function timetableGUI.stationTableHeader(lineID)
+    -- force departure setting
+    local forceDepLabel = api.gui.comp.TextView.new("Force departure")
+    forceDepLabel:setGravity(1,0.5)
+    local forceDepImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
+    if timetable.getForceDepartureEnabled(lineID) then forceDepImage:setImage("ui/checkbox1.tga", false) end
+    local forceDepButton = api.gui.comp.Button.new(forceDepImage, true)
+    forceDepButton:setStyleClassList({"timetable-activateTimetableButton"})
+    forceDepButton:setGravity(0,0.5)
+    forceDepButton:onClick(function()
+        local forceDepEnabled = timetable.getForceDepartureEnabled(lineID)
+        if forceDepEnabled then
+            timetable.setForceDepartureEnabled(lineID, false)
+            forceDepImage:setImage("ui/checkbox0.tga", false)
+        else
+            timetable.setForceDepartureEnabled(lineID, true)
+            forceDepImage:setImage("ui/checkbox1.tga", false)
+        end
+        timetableChanged = true
+    end)
+
+    -- minimum wait setting
+    local minButtonLabel = api.gui.comp.TextView.new("Min. wait enabled")
+    minButtonLabel:setGravity(1,0.5)
+    local minButtonImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
+    if timetable.getMinWaitEnabled(lineID) then minButtonImage:setImage("ui/checkbox1.tga", false) end
+    local minButton = api.gui.comp.Button.new(minButtonImage, true)
+    minButton:setStyleClassList({"timetable-activateTimetableButton"})
+    minButton:setGravity(0,0.5)
+    minButton:onClick(function()
+        local minEnabled = timetable.getMinWaitEnabled(lineID)
+        if minEnabled then
+            timetable.setMinWaitEnabled(lineID, false)
+            minButtonImage:setImage("ui/checkbox0.tga", false)
+        else
+            timetable.setMinWaitEnabled(lineID, true)
+            minButtonImage:setImage("ui/checkbox1.tga", false)
+        end
+        timetableChanged = true
+    end)
+
+    -- maximum wait setting
+    local maxButtonLabel = api.gui.comp.TextView.new("Max. wait enabled")
+    maxButtonLabel:setGravity(1,0.5)
+    local maxButtonImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
+    if timetable.getMaxWaitEnabled(lineID) then maxButtonImage:setImage("ui/checkbox1.tga", false) end
+    local maxButton = api.gui.comp.Button.new(maxButtonImage, true)
+    maxButton:setStyleClassList({"timetable-activateTimetableButton"})
+    maxButton:setGravity(0,0.5)
+    maxButton:onClick(function()
+        local maxEnabled = timetable.getMaxWaitEnabled(lineID)
+        if maxEnabled then
+            timetable.setMaxWaitEnabled(lineID, false)
+            maxButtonImage:setImage("ui/checkbox0.tga", false)
+        else
+            timetable.setMaxWaitEnabled(lineID, true)
+            maxButtonImage:setImage("ui/checkbox1.tga", false)
+        end
+        timetableChanged = true
+    end)
+
+    local headerTable = api.gui.comp.Table.new(7, 'None')
+    headerTable:addRow({
+        api.gui.comp.TextView.new(UIStrings.frequency .. " " .. timetableHelper.getFrequencyString(lineID)),
+        forceDepLabel, forceDepButton, minButtonLabel, minButton, maxButtonLabel, maxButton
+    })
+    --headerTable:addRow({})
+
+    return headerTable
+end
+
 -------------------------------------------------------------
 ---------------------- Right TABLE --------------------------
 -------------------------------------------------------------
@@ -689,52 +757,10 @@ function timetableGUI.fillConstraintTable(index,lineID)
     end)
 end
 
-
 function timetableGUI.makeArrDepWindow(lineID, stationID)
     if not menu.constraintTable then return end
     local conditions = timetable.getConditions(lineID,stationID, "ArrDep")
     if conditions == -1 then return end
-
-    -- minimum maximum setting
-    local minButtonImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
-    if timetable.getMinWaitEnabled(lineID) then minButtonImage:setImage("ui/checkbox1.tga", false) end
-    local minButton = api.gui.comp.Button.new(minButtonImage, true)
-    minButton:setStyleClassList({"timetable-activateTimetableButton"})
-    minButton:setGravity(1,0.5)
-    minButton:onClick(function()
-        local minEnabled = timetable.getMinWaitEnabled(lineID)
-        if minEnabled then
-            timetable.setMinWaitEnabled(lineID, false)
-            minButtonImage:setImage("ui/checkbox0.tga", false)
-        else
-            timetable.setMinWaitEnabled(lineID, true)
-            minButtonImage:setImage("ui/checkbox1.tga", false)
-        end
-        timetableChanged = true
-    end)
-
-    local maxButtonImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
-    if timetable.getMaxWaitEnabled(lineID) then maxButtonImage:setImage("ui/checkbox1.tga", false) end
-    local maxButton = api.gui.comp.Button.new(maxButtonImage, true)
-    maxButton:setStyleClassList({"timetable-activateTimetableButton"})
-    maxButton:setGravity(1,0.5)
-    maxButton:onClick(function()
-        local maxEnabled = timetable.getMaxWaitEnabled(lineID)
-        if maxEnabled then
-            timetable.setMaxWaitEnabled(lineID, false)
-            maxButtonImage:setImage("ui/checkbox0.tga", false)
-        else
-            timetable.setMaxWaitEnabled(lineID, true)
-            maxButtonImage:setImage("ui/checkbox1.tga", false)
-        end
-        timetableChanged = true
-    end)
-
-    local settingsTable = api.gui.comp.Table.new(4, 'NONE')
-    settingsTable:addRow({
-        api.gui.comp.TextView.new("Min. wait enabled"), minButton, 
-        api.gui.comp.TextView.new("Max. wait enabled"), maxButton})
-    menu.constraintTable:addRow({settingsTable})
 
     -- setup separation selector
     local separationList = {30, 20, 15, 12, 10, 7.5, 6, 5, 4, 3, 2.5, 2, 1.5, 1.2, 1}

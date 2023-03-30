@@ -333,7 +333,11 @@ function timetable.departIfReadyArrDep(vehicle, vehicleInfo, time, line, stop)
 
         local arrivalTime = math.floor(vehicleInfo.doorsTime / 1000000)
         if timetable.readyToDepartArrDep(constraints, arrivalTime, time, line, stop, vehicle) then
-            timetableHelper.departVehicle(vehicle)
+            if timetable.getForceDepartureEnabled(line) then
+                timetableHelper.departVehicle(vehicle)
+            else
+                timetableHelper.restartAutoVehicleDeparture(vehicle)
+            end
         end
     end
 end
@@ -360,11 +364,7 @@ function timetable.getWaitTime(arrivalSlot, departureSlot, arrivalTime)
     return 0
 end
 
-function timetable.getDepartureTime(constraint, stopInfo, arrivalTime)
-    local arrivalSlot = (60 * constraint[1]) + constraint[2]
-    local departureSlot = (60 * constraint[3]) + constraint[4]
-    local waitTime = timetable.getWaitTime(arrivalSlot, departureSlot, arrivalTime)
-
+function timetable.getDepartureTime(line, stopInfo, arrivalTime, waitTime)
     if timetable.getMinWaitEnabled(line) then
         if waitTime < stopInfo.minWaitingTime then
             waitTime = stopInfo.minWaitingTime
@@ -390,10 +390,13 @@ function timetable.readyToDepartArrDepInner(constraints, arrivalTime, currentTim
         validDepartureConstraint = timetable.arrayContainsConstraint(departureConstraint, constraints)
     end
     if not validDepartureConstraint then
+        departureConstraint = timetable.getNextDepartureConstraint(constraints, arrivalTime, vehiclesWaiting)
+        local arrivalSlot = (60 * departureConstraint[1]) + departureConstraint[2]
+        local departureSlot = (60 * departureConstraint[3]) + departureConstraint[4]
+        local waitTime = timetable.getWaitTime(arrivalSlot, departureSlot, arrivalTime)
         local lineInfo = timetableHelper.getLineInfo(line)
         local stopInfo = lineInfo.stops[stop]
-        departureConstraint = timetable.getNextDepartureConstraint(constraints, arrivalTime, vehiclesWaiting)
-        departureTime = timetable.getDepartureTime(departureConstraint, stopInfo, arrivalTime)
+        departureTime = timetable.getDepartureTime(line, stopInfo, arrivalTime, waitTime)
         vehiclesWaiting[vehicle] = {
             departureConstraint = departureConstraint,
             departureTime = departureTime
@@ -401,6 +404,23 @@ function timetable.readyToDepartArrDepInner(constraints, arrivalTime, currentTim
     end
 
     return timetable.afterDepartureTime(departureTime, currentTime)
+end
+
+function timetable.setForceDepartureEnabled(line, value)
+    if timetableObject[line] then
+        timetableObject[line].forceDeparture = value
+    end
+end
+
+function timetable.getForceDepartureEnabled(line)
+    if timetableObject[line] then
+        -- if true or nil
+        if timetableObject[line].forceDeparture ~= false then
+            return true
+        end
+    end
+
+    return false
 end
 
 function timetable.setMinWaitEnabled(line, value)
