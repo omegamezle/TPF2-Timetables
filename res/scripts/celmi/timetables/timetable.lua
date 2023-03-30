@@ -13,7 +13,7 @@ stationInfo = {
     conditions = {condition :: Condition},
     vehiclesWaiting = {
         vehicleNumber = {
-            departureConstraint = {}
+            slot = {}
             departureTime = 1 :: int
         }
     }
@@ -320,8 +320,8 @@ function timetable.departIfReady(vehicle, vehicleInfo, vehicles, line, stop)
 end
 
 function timetable.departIfReadyArrDep(vehicle, vehicleInfo, time, line, stop)
-    local constraints = timetableObject[line].stations[stop].conditions.ArrDep
-    if not constraints or contraints == {} then
+    local slots = timetableObject[line].stations[stop].conditions.ArrDep
+    if not slots or slots == {} then
         timetableObject[line].stations[stop].conditions.type = "None"
         return
     end
@@ -332,7 +332,7 @@ function timetable.departIfReadyArrDep(vehicle, vehicleInfo, time, line, stop)
         if not vehicleInfo.doorsOpen then return end
 
         local arrivalTime = math.floor(vehicleInfo.doorsTime / 1000000)
-        if timetable.readyToDepartArrDep(constraints, arrivalTime, time, line, stop, vehicle) then
+        if timetable.readyToDepartArrDep(slots, arrivalTime, time, line, stop, vehicle) then
             if timetable.getForceDepartureEnabled(line) then
                 timetableHelper.departVehicle(vehicle)
             else
@@ -342,18 +342,20 @@ function timetable.departIfReadyArrDep(vehicle, vehicleInfo, time, line, stop)
     end
 end
 
-function timetable.readyToDepartArrDep(constraints, arrivalTime, time, line, stop, vehicle)
+function timetable.readyToDepartArrDep(slots, arrivalTime, time, line, stop, vehicle)
     if not timetableObject[line].stations[stop].vehiclesWaiting then
         timetableObject[line].stations[stop].vehiclesWaiting = {}
     end
 
-    if timetable.readyToDepartArrDepInner(constraints, arrivalTime, time, line, stop, vehicle) then
+    if timetable.readyToDepartArrDepInner(slots, arrivalTime, time, line, stop, vehicle) then
         return true
     end
     return false
 end
 
-function timetable.getWaitTime(arrivalSlot, departureSlot, arrivalTime)
+function timetable.getWaitTime(slot, arrivalTime)
+    local arrivalSlot = timetable.slotToArrivalSlot(slot)
+    local departureSlot = timetable.slotToDepartureSlot(slot)
     if not timetable.afterArrivalSlot(arrivalSlot, arrivalTime) then
         local waitTime = (departureSlot - arrivalSlot) % 3600
         return waitTime + (arrivalSlot - arrivalTime) % 3600
@@ -379,26 +381,24 @@ function timetable.getDepartureTime(line, stopInfo, arrivalTime, waitTime)
     return arrivalTime + waitTime
 end
 
-function timetable.readyToDepartArrDepInner(constraints, arrivalTime, currentTime, line, stop, vehicle)
+function timetable.readyToDepartArrDepInner(slots, arrivalTime, currentTime, line, stop, vehicle)
     local vehiclesWaiting = timetableObject[line].stations[stop].vehiclesWaiting
-    local departureConstraint = nil
+    local slot = nil
     local departureTime = nil
-    local validDepartureConstraint = nil
+    local validSlot = nil
     if vehiclesWaiting[vehicle] then
-        departureConstraint = vehiclesWaiting[vehicle].departureConstraint
+        slot = vehiclesWaiting[vehicle].slot
         departureTime = vehiclesWaiting[vehicle].departureTime
-        validDepartureConstraint = timetable.arrayContainsConstraint(departureConstraint, constraints)
+        validSlot = timetable.arrayContainsSlot(slot, slots)
     end
-    if not validDepartureConstraint then
-        departureConstraint = timetable.getNextDepartureConstraint(constraints, arrivalTime, vehiclesWaiting)
-        local arrivalSlot = (60 * departureConstraint[1]) + departureConstraint[2]
-        local departureSlot = (60 * departureConstraint[3]) + departureConstraint[4]
-        local waitTime = timetable.getWaitTime(arrivalSlot, departureSlot, arrivalTime)
+    if not validSlot then
+        slot = timetable.getNextSlot(slots, arrivalTime, vehiclesWaiting)
+        local waitTime = timetable.getWaitTime(slot, arrivalTime)
         local lineInfo = timetableHelper.getLineInfo(line)
         local stopInfo = lineInfo.stops[stop]
         departureTime = timetable.getDepartureTime(line, stopInfo, arrivalTime, waitTime)
         vehiclesWaiting[vehicle] = {
-            departureConstraint = departureConstraint,
+            slot = slot,
             departureTime = departureTime
         }
     end
@@ -468,7 +468,8 @@ function timetable.departIfReadyDebounce(vehicle, vehicleInfo, vehicles, time, l
     if not condition[1] then condition[1] = 0 end
     if not condition[2] then condition[2] = 0 end
 
-    local nextDepartureTime = previousDepartureTime + ((condition[1] * 60)  + condition[2])
+    local unbunchTime = timetable.minToSec(condition[1], condition[2])
+    local nextDepartureTime = previousDepartureTime + unbunchTime
     timetable.departIfAfterDepartureTime(vehicle, vehicleInfo, time, nextDepartureTime)
 end
 
@@ -491,7 +492,8 @@ function timetable.departIfReadyAutoDebounce(vehicle, vehicleInfo, vehicles, tim
     if condition == -1 then condition = {1, 0} end
     if not condition[1] then condition[1] = 1 end
     if not condition[2] then condition[2] = 0 end
-    local nextDepartureTime = previousDepartureTime + frequency - (condition[1]*60 + condition[2])
+    local marginTime = timetable.minToSec(condition[1], condition[2])
+    local nextDepartureTime = previousDepartureTime + frequency - marginTime
 
     timetable.departIfAfterDepartureTime(vehicle, vehicleInfo, time, nextDepartureTime)
 end
@@ -576,43 +578,23 @@ function timetable.afterDepartureSlot(arrivalSlot, departureSlot, arrivalTime)
     end
 end
 
---- This function calcualtes the time from a given constraint to its closest next constraint
----@param constraint table in format like: {9,0,59,0}
----@param allConstraints number table in format like: {{30,0,59,0},{9,0,59,0},...}
----@return number timeUntilNextContraint: {30,0,59,0}
-function timetable.getTimeUntilNextConstraint(constraint, allConstraints)
-    local res = 60*60
-    local constraintSec =((constraint[1] * 60) + constraint[2])
-    for _,v in pairs(allConstraints) do
-        local toCheckSec = ((v[1] * 60) + v[2])
-        if constraintSec > toCheckSec then
-            toCheckSec =  toCheckSec + (60*60)
-        end
-        local difference = toCheckSec - constraintSec
-        if difference > 0 and difference < res then
-            res = difference
-        end
-    end
-    return res
-end
-
----Find the next valid constraint for given constraints and time
----@param constraints table in format like: {{30,0,59,0},{9,0,59,0}}
----@param time number in seconds
----@param usedConstraints table in format like: {{30,0,59,0}, {9,0,59,0}}
----@return table closestConstraint example: {30,0,59,0}
-function timetable.getNextDepartureConstraint(constraints, arrivalTime, waitingVehicles)
-    -- Put the constraints in chronological order by arrival time
-    table.sort(constraints, function(a, b)
-        local aTime = timetable.getArrivalTimeFrom(a)
-        local bTime = timetable.getArrivalTimeFrom(b)
-        return aTime < bTime
+---Find the next valid timetable slot for given slots and arrival time
+---@param slots table in format like: {{30,0,59,0},{9,0,59,0}}
+---@param arrivalTime number in seconds
+---@param waitingVehicles table in format like: {{30,0,59,0}, {9,0,59,0}}
+---@return table closestSlot example: {30,0,59,0}
+function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
+    -- Put the slots in chronological order by arrival time
+    table.sort(slots, function(slot1, slot2)
+        local arrivalSlot1 = timetable.slotToArrivalSlot(slot1)
+        local arrivalSlot2 = timetable.slotToArrivalSlot(slot2)
+        return arrivalSlot1 < arrivalSlot2
     end)
 
     -- Find the distance from the arrival time
     local res = {diff = 3601, value = nil}
-    for index, constraint in pairs(constraints) do
-        local arrivalSlot = timetable.getArrivalTimeFrom(constraint)
+    for index, slot in pairs(slots) do
+        local arrivalSlot = timetable.slotToArrivalSlot(slot)
         local diff = timetable.getTimeDifference(arrivalSlot, arrivalTime % 3600)
 
         if (diff < res.diff) then
@@ -624,59 +606,59 @@ function timetable.getNextDepartureConstraint(constraints, arrivalTime, waitingV
     if not res.index then return nil end
 
     -- Split vehiclesWaiting by whether they have departed
-    local waitingConstraints = {}
-    local departedConstraints = {}
-    if #constraints == 1 then
+    local waitingSlots = {}
+    local departedSlots = {}
+    if #slots == 1 then
         for vehicle, _ in pairs(waitingVehicles) do
             waitingVehicles[vehicle] = nil
         end
     else
-        for vehicle, constraint in pairs(waitingVehicles) do
-            if arrivalTime <= constraint.departureTime then
-                waitingConstraints[vehicle] = constraint.departureConstraint
+        for vehicle, waitingVehicle in pairs(waitingVehicles) do
+            if arrivalTime <= waitingVehicle.departureTime then
+                waitingSlots[vehicle] = waitingVehicle.slot
             else
-                departedConstraints[vehicle] = constraint.departureConstraint
+                departedSlots[vehicle] = waitingVehicle.slot
             end
         end
     end
 
-    -- Find if the constraint with the closest arrival time is currently being used
-    -- If true, find the next consecutive available constraint
-    for i = res.index, #constraints + res.index - 1 do
+    -- Find if the slot with the closest arrival time is currently being used
+    -- If true, find the next consecutive available slot
+    for i = res.index, #slots + res.index - 1 do
         -- Need to make sure that 2 mod 2 returns 2 rather than 0
-        local normalisedIndex = ((i - 1) % #constraints) + 1
+        local normalisedIndex = ((i - 1) % #slots) + 1
 
-        local constraint = constraints[normalisedIndex]
-        local constraintAvailable = true
-        if timetable.arrayContainsConstraint(constraint, waitingConstraints) then
-            constraintAvailable = false
-            -- if the nearest constraint is still waiting, then all departedConstraints can be removed
-            for vehicle, _ in pairs(departedConstraints) do
+        local slot = slots[normalisedIndex]
+        local slotAvailable = true
+        if timetable.arrayContainsSlot(slot, waitingSlots) then
+            slotAvailable = false
+            -- if the nearest slot is still waiting, then all departedSlots can be removed
+            for vehicle, _ in pairs(departedSlots) do
                 vehiclesWaiting[vehicle] = nil
             end
         else
-            -- if the nearest constraint is a departed, all other departedConstraints can be removed
-            for vehicle, departedConstraint in pairs(departedConstraints) do
-                if timetable.constraintsEqual(constraint, departedConstraint) then
-                    constraintAvailable = false
+            -- if the nearest slot is a departed, all other departedSlots can be removed
+            for vehicle, departedSlot in pairs(departedSlots) do
+                if timetable.slotsEqual(slot, departedSlot) then
+                    slotAvailable = false
                 else
                     waitingVehicles[vehicle] = nil
                 end
             end
         end
 
-        if constraintAvailable then
-            return constraint
+        if slotAvailable then
+            return slot
         end
     end
 
-    -- If all constraints are being used, still return the closest constraint anyway.
-    return constraints[res.index]
+    -- If all slots are being used, still return the closest slot anyway.
+    return slots[res.index]
 end
 
-function timetable.arrayContainsConstraint(constraint, array)
-    for key, item in pairs(array) do
-        if timetable.constraintsEqual(item, constraint) then
+function timetable.arrayContainsSlot(slot, slotArray)
+    for key, slotItem in pairs(slotArray) do
+        if timetable.slotsEqual(slotItem, slot) then
             return true
         end
     end
@@ -684,24 +666,26 @@ function timetable.arrayContainsConstraint(constraint, array)
     return false
 end
 
-function timetable.constraintsEqual(constraint1, constraint2)
-    if constraint1 == constraint2 then
+function timetable.slotsEqual(slot1, slot2)
+    if slot1 == slot2 then
         return true
     elseif (
-        constraint1[1] == constraint2[1] and 
-        constraint1[2] == constraint2[2] and
-        constraint1[3] == constraint2[3] and
-        constraint1[4] == constraint2[4]
+        slot1[1] == slot2[1] and 
+        slot1[2] == slot2[2] and
+        slot1[3] == slot2[3] and
+        slot1[4] == slot2[4]
     ) then
         return true
     end
     return false
 end
 
-function timetable.constraintToSeconds(constraint)
-    local arrTime = timetable.minToSec(constraint[1], constraint[2])
-    local depTime = timetable.minToSec(constraint[3], constraint[4])
-    return {arr = arrTime, dep = depTime}
+function timetable.slotToArrivalSlot(slot)
+    return timetable.minToSec(slot[1], slot[2])
+end
+
+function timetable.slotToDepartureSlot(slot)
+    return timetable.minToSec(slot[3], slot[4])
 end
 
 function timetable.minToSec(min, sec)
@@ -727,14 +711,6 @@ function timetable.deltaSecToStr(deltaSec)
     return math.floor(deltaSec / 6) / 10
 end
 
----Gets the arrival time in seconds from the constraint
----@param constraint table in format like: {9,0,59,0}
-function timetable.getArrivalTimeFrom(constraint)
-    local arrMin = constraint[1]
-    local arrSec = constraint[2]
-    return arrMin * 60 + arrSec
-end
-
 ---Calculates the time difference between two timestamps in seconds.
 ---Considers that 59 mins is close to 0 mins.
 ---@param a number in seconds between in range of 0-3599 (inclusive)
@@ -750,23 +726,25 @@ function timetable.getTimeDifference(a, b)
 end
 
 ---Shifts a time in minutes and seconds by some offset
----Helper function for shiftConstraint() 
+---Helper function for shiftSlot() 
 ---@param time table in format like: {28,45}
 ---@param offset number in seconds 
 ---@return table shifted time, example: {30,0}
 function timetable.shiftTime(time, offset)
-    local timeSeconds = (time[1] * 60 + time[2] + offset) % 3600
+    local timeSeconds = (time + offset) % 3600
     return {math.floor(timeSeconds / 60), timeSeconds % 60}
 end
 
 
----Shifts a constraint by some offset
----@param constraint table in format like: {30,0,59,0}
+---Shifts a slot by some offset
+---@param slot table in format like: {30,0,59,0}
 ---@param offset number in seconds 
----@return constraint table shifted time, example: {31,0,0,0}
-function timetable.shiftConstraint(constraint, offset)
-    local shiftArr = timetable.shiftTime({constraint[1], constraint[2]}, offset)
-    local shiftDep = timetable.shiftTime({constraint[3], constraint[4]}, offset)
+---@return slot table shifted time, example: {31,0,0,0}
+function timetable.shiftSlot(slot, offset)
+    local arrivalSlot = timetable.slotToArrivalSlot(slot)
+    local shiftArr = timetable.shiftTime(arrivalSlot, offset)
+    local departureSlot = timetable.slotToDepartureSlot(slot)
+    local shiftDep = timetable.shiftTime(departureSlot, offset)
     return {shiftArr[1], shiftArr[2], shiftDep[1], shiftDep[2]}
 end
 

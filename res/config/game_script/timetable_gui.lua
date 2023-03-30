@@ -778,7 +778,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         -- generate recurring conditions
         local separation = separationList[separationCombo:getCurrentIndex() + 1]
         for i = 1, 60 / separation - 1 do
-            timetable.addCondition(lineID,stationID, {type = "ArrDep", ArrDep = {timetable.shiftConstraint(templateArrDep, i * separation * 60)}})
+            timetable.addCondition(lineID,stationID, {type = "ArrDep", ArrDep = {timetable.shiftSlot(templateArrDep, i * separation * 60)}})
         end
 
         -- cleanup
