@@ -353,6 +353,10 @@ function timetable.readyToDepartArrDep(slots, arrivalTime, time, line, stop, veh
     return false
 end
 
+---Gets the time a vehicle needs to wait for
+---@param slot table in format like: {28, 45, 30, 00}
+---@param arrivalTime int for the time of arrival: 1740
+---@return int wait time: 60
 function timetable.getWaitTime(slot, arrivalTime)
     local arrivalSlot = timetable.slotToArrivalSlot(slot)
     local departureSlot = timetable.slotToDepartureSlot(slot)
@@ -366,6 +370,13 @@ function timetable.getWaitTime(slot, arrivalTime)
     return 0
 end
 
+---Gets the departure time for a vehicle
+---Takes into account min and max wait times when enabled
+---@param line int the line the vehicle is only
+---@param stopInfo table the info for the stop on the line the vehicle is in
+---@param arrivalTime int the time the vehicle anotherVehicleArrivedEarlier
+---@param waitTime int the time the vehicle should wait for given its timetable slot
+---@return int the time the vehicle should depart
 function timetable.getDepartureTime(line, stopInfo, arrivalTime, waitTime)
     if timetable.getMinWaitEnabled(line) then
         if waitTime < stopInfo.minWaitingTime then
