@@ -342,17 +342,6 @@ function timetable.departIfReadyArrDep(vehicle, vehicleInfo, time, line, stop)
     end
 end
 
-function timetable.readyToDepartArrDep(slots, arrivalTime, time, line, stop, vehicle)
-    if not timetableObject[line].stations[stop].vehiclesWaiting then
-        timetableObject[line].stations[stop].vehiclesWaiting = {}
-    end
-
-    if timetable.readyToDepartArrDepInner(slots, arrivalTime, time, line, stop, vehicle) then
-        return true
-    end
-    return false
-end
-
 ---Gets the time a vehicle needs to wait for
 ---@param slot table in format like: {28, 45, 30, 00}
 ---@param arrivalTime int for the time of arrival: 1740
@@ -392,7 +381,11 @@ function timetable.getDepartureTime(line, stopInfo, arrivalTime, waitTime)
     return arrivalTime + waitTime
 end
 
-function timetable.readyToDepartArrDepInner(slots, arrivalTime, currentTime, line, stop, vehicle)
+function timetable.readyToDepartArrDep(slots, arrivalTime, currentTime, line, stop, vehicle)
+    if not timetableObject[line].stations[stop].vehiclesWaiting then
+        timetableObject[line].stations[stop].vehiclesWaiting = {}
+    end
+
     local vehiclesWaiting = timetableObject[line].stations[stop].vehiclesWaiting
     local slot = nil
     local departureTime = nil
@@ -400,7 +393,11 @@ function timetable.readyToDepartArrDepInner(slots, arrivalTime, currentTime, lin
     if vehiclesWaiting[vehicle] then
         slot = vehiclesWaiting[vehicle].slot
         departureTime = vehiclesWaiting[vehicle].departureTime
-        validSlot = timetable.arrayContainsSlot(slot, slots)
+        -- the latest arrival time for a 00:00 departure slot is 29:59
+        -- this makes the slot invalid in the departure time is too far in the past
+        if departureTime + 30 * 60 > arrivalTime  then
+            validSlot = timetable.arrayContainsSlot(slot, slots)
+        end
     end
     if not validSlot then
         slot = timetable.getNextSlot(slots, arrivalTime, vehiclesWaiting)
