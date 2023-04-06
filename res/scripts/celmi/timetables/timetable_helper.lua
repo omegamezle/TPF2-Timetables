@@ -513,12 +513,9 @@ function timetableHelper.conditionToString(cond, lineID, type)
 end
 
 function timetableHelper.getAutoUnbunchFor(lineID, cond)
-    print("lineID" .. tostring(lineID))
     local frequency = timetableHelper.getFrequencyMinSec(lineID)
-    print("type" .. type(frequency))
     if type(frequency) == "table" then
         local unbunchTime = (frequency.min - cond[1]) * 60 + frequency.sec - cond[2]
-        print("unbunchTime" .. tostring(unbunchTime))
         if unbunchTime >= 0 then
             return UIStrings.unbunchTime .. ": " .. string.format("%02d", math.floor(unbunchTime / 60)) .. ":" .. string.format("%02d", math.floor(unbunchTime % 60))
         end
