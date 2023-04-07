@@ -4,6 +4,7 @@ package.loaded["celmi/timetables/timetable_helper"] = mockTimetableHelper
 local timetable = require ".res.scripts.celmi.timetables.timetable"
 
 local timetableTests = {}
+local testsHelper = {}
 
 timetableTests[#timetableTests + 1] = function()
     local x = { [1] = 0 }
@@ -34,134 +35,80 @@ end
 
 timetableTests[#timetableTests + 1] = function()
     timetable.setTimetableObject({})
-    local x = timetable.getNextDepartureConstraint({{30,0,59,0},{9,0,59,0} },1200, {})
+    local x = timetable.getNextSlot({{30,0,59,0},{9,0,59,0} },1200, {})
     assert(x[1] == 30 and x[2] == 0 and x[3] == 59 and x[4] == 0, "should choose the closest time constraint")
-    x = timetable.getNextDepartureConstraint({{30,0,59,0},{11,0,59,0} },1200, {})
+    x = timetable.getNextSlot({{30,0,59,0},{11,0,59,0} },1200, {})
     assert(x[1] == 11 and x[2] == 0 and x[3] == 59 and x[4] == 0, "should choose the closest time constraint")
-    x = timetable.getNextDepartureConstraint({{51,0,0,0},{50,0,59,0} },1200, {})
+    x = timetable.getNextSlot({{51,0,0,0},{50,0,59,0} },1200, {})
     assert(x[1] == 51 and x[2] == 0 and x[3] == 0 and x[4] == 0, "should choose the closest time constraint")
-    x = timetable.getNextDepartureConstraint({{51,0,0,0},{49,1,0,0} },1200, {})
+    x = timetable.getNextSlot({{51,0,0,0},{49,1,0,0} },1200, {})
     assert(x[1] == 51 and x[2] == 0 and x[3] == 0 and x[4] == 0, "should choose the closest time constraint")
-    x = timetable.getNextDepartureConstraint({{0,59,1,0},{1,30,1,30} },60, {})
+    x = timetable.getNextSlot({{0,59,1,0},{1,30,1,30} },60, {})
     assert(x[1] == 0 and x[2] == 59 and x[3] == 1 and x[4] == 0, "should choose the closest time constraint")
-    x = timetable.getNextDepartureConstraint({},1200, {})
+    x = timetable.getNextSlot({},1200, {})
     assert(x == nil, "should return nil")
 
-    local a = {30,0,59,0}
-    x = timetable.getNextDepartureConstraint({a,{9,0,59,0} },1200, {a})
+    local a = {slot={30,0,59,0}, departureTime=3540}
+    x = timetable.getNextSlot({{30,0,59,0},{9,0,59,0} },1200, {a})
     assert(x[1] == 9 and x[2] == 0 and x[3] == 59 and x[4] == 0, "should choose the only available time constraint")
-    x = timetable.getNextDepartureConstraint({a,{30,0,59,0} },1200, {a})
+    x = timetable.getNextSlot({{30,0,59,0},{30,0,59,0} },1200, {a})
     assert(x[1] == 30 and x[2] == 0 and x[3] == 59 and x[4] == 0, "should choose the only available time constraint")
-    x = timetable.getNextDepartureConstraint({a },1200, {a})
+    x = timetable.getNextSlot({{30,0,59,0}},1200, {a})
     assert(x[1] == 30 and x[2] == 0 and x[3] == 59 and x[4] == 0, "should still return the constraint")
 end
 
 timetableTests[#timetableTests + 1] = function()
     timetable.setTimetableObject({})
-    local x = timetable.afterDepartureConstraint(20 * 60, {0,0,40, 0}, 20 * 60)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(20 * 60, {0,0,40, 0}, 30 * 60)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(20 * 60, {0,0,40, 0}, 40 * 60)
-    assert(x, "should be after departure")
-    x = timetable.afterDepartureConstraint(20 * 60, {0,0,40, 0}, 50 * 60)
-    assert(x, "should be after departure")
-    -- x = timetable.afterDepartureConstraint(20 * 60, {0,0,40, 0}, 0 * 60 + 3600)
-    -- assert(x, "should be after departure")
-    -- x = timetable.afterDepartureConstraint(20 * 60, {0,0,40, 0}, 10 * 60 + 3600)
-    -- assert(x, "should be after departure")
-    -- x = timetable.afterDepartureConstraint(20 * 60, {0,0,40, 0}, 20 * 60 + 3600)
-    -- assert(x, "should be after departure")
-
-    x = timetable.afterDepartureConstraint(50 * 60, {0,0,40, 0}, 50 * 60)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(50 * 60, {0,0,40, 0}, 0 * 60 + 3600)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(50 * 60, {0,0,40, 0}, 10 * 60 + 3600)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(50 * 60, {0,0,40, 0}, 20 * 60 + 3600)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(50 * 60, {0,0,40, 0}, 30 * 60 + 3600)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(50 * 60, {0,0,40, 0}, 40 * 60 + 3600)
-    assert(x, "should be after departure")
-    x = timetable.afterDepartureConstraint(50 * 60, {0,0,40, 0}, 50 * 60 + 3600)
-    assert(x, "should be after departure")
+    local x = timetable.getWaitTime({29,00,39,00}, 29*60)
+    assert(x == 10*60, "wait time should be 10 min instead of ".. x)
+    x = timetable.getWaitTime({29,30,30,00}, 29*60 + 30)
+    assert(x == 30, "wait time should be 30 sec instead of ".. x)
+    x = timetable.getWaitTime({29,30,30,35}, 29*60 + 30)
+    assert(x == 65, "wait time should be 65 sec instead of ".. x)
+    x = timetable.getWaitTime({30,00,25,00}, 30*60)
+    assert(x == 55*60, "wait time should be 55 min instead of ".. x)
+    x = timetable.getWaitTime({55,00,01,00}, 55*60)
+    assert(x == 6*60, "wait time should be 6 min instead of ".. x)
+    x = timetable.getWaitTime({54,00,01,00}, 55*60)
+    assert(x == 6*60, "wait time should be 6 min instead of ".. x)
+    x = timetable.getWaitTime({01,30,01,00}, 55*60)
+    assert(x == 66*60, "wait time should be 66 min instead of ".. x)
+    x = timetable.getWaitTime({55,00,54,00}, 01*60)
+    assert(x == 53*60, "wait time should be 53 min instead of ".. x)
+    x = timetable.getWaitTime({55,00,54,00}, 01*60 + 30)
+    assert(x == 52*60 + 30, "wait time should be 52 min instead of ".. x)
 end
 
 timetableTests[#timetableTests + 1] = function()
-    timetable.setTimetableObject({})
-    local x = timetable.afterDepartureConstraint(40 * 60, {0,0,20, 0}, 40 * 60)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(40 * 60, {0,0,20, 0}, 50 * 60)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(40 * 60, {0,0,20, 0}, 0 * 60 + 3600)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(40 * 60, {0,0,20, 0}, 10 * 60 + 3600)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(40 * 60, {0,0,20, 0}, 20 * 60 + 3600)
-    assert(x, "should be after departure")
-    x = timetable.afterDepartureConstraint(40 * 60, {0,0,20, 0}, 30 * 60 + 3600)
-    assert(x, "should be after departure")
-    x = timetable.afterDepartureConstraint(40 * 60, {0,0,20, 0}, 40 * 60 + 3600)
-    assert(x, "should be after departure")
-    x = timetable.afterDepartureConstraint(40 * 60, {0,0,20, 0}, 50 * 60 + 3600)
-    assert(x, "should be after departure")
+    table.remove(mockTimetableHelper)
+    mockTimetableHelper.getLineInfo = function(line)
+        assert(line == 1)
+        return {stops = {[1] = {
+            minWaitingTime = 30,
+            maxWaitingTime = 300
+        }}}
+    end
+
+    timetable.setTimetableObject({[1] = {minWaitEnabled=true, maxWaitEnabled=false}})
+    local x = timetable.getDepartureTime(1, 1, 29*60, 10*60)
+    assert(x == 39*60, "departure time should be 39:00 instead of ".. x)
+    x = timetable.getDepartureTime(1, 1, 29*60 + 30, 15)
+    assert(x == 30*60, "departure time should be 30:00 instead of ".. x)
+    x = timetable.getDepartureTime(1, 1, 29*60 + 30, 65)
+    assert(x == 30*60 + 35, "departure time should be 30:35 instead of ".. x)
+    x = timetable.getDepartureTime(1, 1, 30*60, 55*60)
+    assert(x == 85*60, "departure time should be 1+ 25:00 instead of ".. x)
+
+    timetable.setTimetableObject({[1] = {minWaitEnabled=false, maxWaitEnabled=true}})
+    x = timetable.getDepartureTime(1, 1, 30*60, 55*60)
+    assert(x == 35*60, "departure time should be 35:00 instead of ".. x)
+    x = timetable.getDepartureTime(1, 1, 55*60, 06*60)
+    assert(x == 60*60, "departure time should be 1+ 00:00 instead of ".. x)
+    x = timetable.getDepartureTime(1, 1, 29*60 + 45, 15)
+    assert(x == 30*60, "departure time should be 30:00 instead of ".. x)
 end
 
-timetableTests[#timetableTests + 1] = function()
-    timetable.setTimetableObject({})
-    local x = timetable.afterDepartureConstraint(26 * 60, {27,0,28,0}, 26 * 60)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(26 * 60, {27,0,28,0}, 27 * 60)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(26 * 60, {27,0,28,0}, 28 * 60)
-    assert(x, "should be after departure")
-    x = timetable.afterDepartureConstraint(26 * 60, {27,0,28,0}, 29 * 60)
-    assert(x, "should be after departure")
-
-    x = timetable.afterDepartureConstraint(27 * 60, {27,0,28,0}, 27 * 60)
-    assert(not x, "should be before departure")
-    x = timetable.afterDepartureConstraint(27 * 60, {27,0,28,0}, 28 * 60)
-    assert(x, "should be after departure")
-    x = timetable.afterDepartureConstraint(27 * 60, {27,0,28,0}, 29 * 60)
-    assert(x, "should be after departure")
-
-    x = timetable.afterDepartureConstraint(28 * 60, {27,0,28,0}, 28 * 60)
-    assert(x, "should be after departure")
-    x = timetable.afterDepartureConstraint(28 * 60, {27,0,28,0}, 29 * 60)
-    assert(x, "should be after departure")
-
-    x = timetable.afterDepartureConstraint(29 * 60, {27,0,28,0}, 29 * 60)
-    assert(x, "should be after departure")
-    x = timetable.afterDepartureConstraint(29 * 60, {27,0,28,0}, 30 * 60)
-    assert(x, "should be after departure")
-end
-
-timetableTests[#timetableTests + 1] = function()
-    timetable.setTimetableObject({})
-    local x = timetable.getTimeUntilNextConstraint({29,0,_,_}, {{29,0,_,_},{39,0,_,_}})
-    assert(x == 10*60, "time to closest constraint should be 10 min instead of ".. x)
-    x = timetable.getTimeUntilNextConstraint({29,30,_,_}, {{29,30,_,_},{30,0,_,_}})
-    assert(x == 30, "time to closest constraint should be 30 sec instead of ".. x)
-    x = timetable.getTimeUntilNextConstraint({29,30,_,_}, {{29,30,_,_},{30,35,_,_}})
-    assert(x == 65, "time to closest constraint should be 65 sec instead of ".. x)
-    x = timetable.getTimeUntilNextConstraint({30,00,_,_}, {{30,00,_,_},{25,0,_,_}})
-    assert(x == 55*60, "time to closest constraint should be 55 min instead of ".. x)
-    x = timetable.getTimeUntilNextConstraint({55,00,_,_}, {{55,00,_,_},{1,0,_,_}})
-    assert(x == 6*60, "time to closest constraint should be 55 min instead of ".. x)
-    x = timetable.getTimeUntilNextConstraint({55,00,_,_}, {{55,00,_,_},{1,0,_,_},{54,0,_,_}})
-    assert(x == 6*60, "time to closest constraint should be 55 min instead of ".. x)
-    x = timetable.getTimeUntilNextConstraint({55,00,_,_}, {{55,00,_,_},{1,30,_,_},{1,0,_,_},{54,0,_,_}})
-    assert(x == 6*60, "time to closest constraint should be 55 min instead of ".. x)
-    x = timetable.getTimeUntilNextConstraint({1,00,_,_}, {{55,00,_,_},{1,0,_,_},{54,0,_,_}})
-    assert(x == 53*60, "time to closest constraint should be 55 min instead of ".. x)
-    x = timetable.getTimeUntilNextConstraint({1,30,_,_}, {{55,00,_,_},{1,30,_,_},{54,0,_,_}})
-    assert(x == 52*60 + 30, "time to closest constraint should be 55 min instead of ".. x)
-end
-
--- All tests here done with line and station IDs of 1 for simplicity
-timetableTests[#timetableTests + 1] = function()
+testsHelper.setUpMock = function()
     table.remove(mockTimetableHelper)
 
     mockTimetableHelper.getStationID = function(line, stationNumber)
@@ -192,41 +139,270 @@ timetableTests[#timetableTests + 1] = function()
             }
         }
     end
+end
+
+timetableTests[#timetableTests + 1] = function()
+    testsHelper.setUpMock()
+    timetable.setTimetableObject({})
+    local constraints = {{00,00,40,00}}
+    timetable.addCondition(1, 1, {type = "ArrDep", ArrDep = constraints}) 
+
+    local vehiclesWaiting = {}
+
+    local time = (20*60) + 0 -- 20:00
+    mockTimetableHelper.getTime = function()
+        return time
+    end
+    local arrivalTime = time
+    local x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = (30*60) + 0 -- 30:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = (40*60) + 0 -- 40:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = (50*60) + 0 -- 50:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = 3600 + (00*60) + 0 -- 00:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = 3600 + (10*60) + 0 -- 10:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = 3600 + (20*60) + 0 -- 20:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+
+
+    time = 3600 + (50*60) + 0 -- 50:00
+    arrivalTime = time
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = 7200 + (0*60) + 0 -- 00:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = 7200 + (10*60) + 0 -- 10:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = 7200 + (20*60) + 0 -- 20:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = 7200 + (30*60) + 0 -- 30:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = 7200 + (40*60) + 0 -- 40:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = 7200 + (50*60) + 0 -- 50:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+end
+
+timetableTests[#timetableTests + 1] = function()
+    testsHelper.setUpMock()
+    timetable.setTimetableObject({})
+    local constraints = {{00,00,20,00}}
+    timetable.addCondition(1, 1, {type = "ArrDep", ArrDep = constraints})
+
+    local vehiclesWaiting = {}
+
+    local time = (40*60) + 0 -- 40:00
+    mockTimetableHelper.getTime = function()
+        return time
+    end
+    local arrivalTime = time
+    local x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = (50*60) -- 50:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = 3600 + (00*60) -- 00:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = 3600 + (10*60) -- 10:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = 3600 + (20*60) -- 20:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = 3600 + (30*60) -- 30:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = 3600 + (40*60) -- 40:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = 3600 + (50*60) -- 50:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+end
+
+timetableTests[#timetableTests + 1] = function()
+    testsHelper.setUpMock()
+    timetable.setTimetableObject({})
+    local constraints = {{27,00,28,00}}
+    timetable.addCondition(1, 1, {type = "ArrDep", ArrDep = constraints})
+
+    local vehiclesWaiting = {}
+
+    local time = (26*60) + 0 -- 26:00
+    mockTimetableHelper.getTime = function()
+        return time
+    end
+    local arrivalTime = time
+    local x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = (27*60) -- 27:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = (28*60) -- 28:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = (29*60) -- 29:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+
+    
+    time = 3600 + (27*60) -- 27:00
+    arrivalTime = time
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "should be before departure")
+
+    time = 3600 + (28*60) -- 28:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = 3600 + (29*60) -- 29:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+
+
+    time = 7200 + (28*60) -- 28:00
+    arrivalTime = time
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = 7200 + (29*60) -- 29:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+
+
+    time = 10800 + (29*60) -- 29:00
+    arrivalTime = time
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+
+    time = 10800 + (30*60) -- 30:00
+    x = timetable.readyToDepartArrDep(arrivalTime, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "should be after departure")
+end
+
+-- All tests here done with line and station IDs of 1 for simplicity
+-- Tests that nearest timetable slot is given, unless already taken.
+-- In which case, the next consecutive timetable slot available is given.
+timetableTests[#timetableTests + 1] = function()
+    testsHelper.setUpMock()
     timetable.setTimetableObject({})
     local constraints = {{55, 0, 58, 0}, {57, 0, 0, 0}, {59, 0, 2, 0}}
-    timetable.addCondition(1, 1, {type = "ArrDep", ArrDep = constraints}) 
+    timetable.addCondition(1, 1, {type = "ArrDep", ArrDep = constraints})
+
+    local vehiclesWaiting = {}
 
     local time = (57*60) + 1 -- 57:01
     mockTimetableHelper.getTime = function()
         return time
     end
     local arrivalTime1 = time
-    local x = timetable.readyToDepartArrDep(constraints, arrivalTime1, time, 1, 1, 1)
+    local x = timetable.readyToDepartArrDep(arrivalTime1, time, 1, 1, 1, vehiclesWaiting)
     assert(not x, "Should wait for train")
 
     time = (59*60) + 11 -- 59:11
     local arrivalTime2 = time
-    x = timetable.readyToDepartArrDep(constraints, arrivalTime2, time, 1, 1, 2)
+    x = timetable.readyToDepartArrDep(arrivalTime2, time, 1, 1, 2, vehiclesWaiting)
     assert(not x, "Should wait for train")
 
     time = (60*60) + 0 -- 00:00
-    x = timetable.readyToDepartArrDep(constraints, arrivalTime1, time, 1, 1, 1)
+    x = timetable.readyToDepartArrDep(arrivalTime1, time, 1, 1, 1, vehiclesWaiting)
     assert(x, "Shouldn't wait for train")
 
     time = (60*60) + 1 -- 00:01
-    x = timetable.readyToDepartArrDep(constraints, arrivalTime1, time, 1, 1, 1)
+    x = timetable.readyToDepartArrDep(arrivalTime1, time, 1, 1, 1, vehiclesWaiting)
     assert(x, "Shouldn't wait for train")
 
     time = (60*60) + 0 -- 00:00
-    x = timetable.readyToDepartArrDep(constraints, arrivalTime2, time, 1, 1, 2)
+    x = timetable.readyToDepartArrDep(arrivalTime2, time, 1, 1, 2, vehiclesWaiting)
     assert(not x, "Should wait for train")
 
     time = (62*60) + 0 -- 02:00
-    x = timetable.readyToDepartArrDep(constraints, arrivalTime2, time, 1, 1, 2)
+    x = timetable.readyToDepartArrDep(arrivalTime2, time, 1, 1, 2, vehiclesWaiting)
     assert(x, "Shouldn't wait for train")
 
     time = (62*60) + 1 -- 02:01
-    x = timetable.readyToDepartArrDep(constraints, arrivalTime2, time, 1, 1, 2)
+    x = timetable.readyToDepartArrDep(arrivalTime2, time, 1, 1, 2, vehiclesWaiting)
+    assert(x, "Shouldn't wait for train")
+end
+
+-- Tests for issue #26: Vehicle takes departed vehicles timetable slot
+timetableTests[#timetableTests + 1] = function()
+    testsHelper.setUpMock()
+    timetable.setTimetableObject({})
+    local constraints = {{5, 0, 7, 0}, {15, 0, 17, 0}, {25, 0, 27, 0}, {35, 0, 37, 0}, {45, 0, 47, 0}, {55, 0, 57, 0}}
+    timetable.addCondition(1, 1, {type = "ArrDep", ArrDep = constraints})
+
+    local vehiclesWaiting = {}
+
+    local time = (5*60) + 1 -- 05:01
+    mockTimetableHelper.getTime = function()
+        return time
+    end
+    local arrivalTime1 = time
+    local x = timetable.readyToDepartArrDep(arrivalTime1, time, 1, 1, 1, vehiclesWaiting)
+    assert(not x, "Should wait for train")
+
+    time = (7*60) + 0 -- 07:00
+    x = timetable.readyToDepartArrDep(arrivalTime1, time, 1, 1, 1, vehiclesWaiting)
+    assert(x, "Shouldn't wait for train")
+
+    time = (8*60) + 11 -- 08:11
+    local arrivalTime2 = time
+    x = timetable.readyToDepartArrDep(arrivalTime2, time, 1, 1, 2, vehiclesWaiting)
+    assert(not x, "Should wait for train")
+
+    time = (15*60) + 11 -- 15:11
+    local arrivalTime2 = time
+    x = timetable.readyToDepartArrDep(arrivalTime2, time, 1, 1, 2, vehiclesWaiting)
+    assert(not x, "Should wait for train")
+
+    time = (17*60) -- 17:00
+    local arrivalTime2 = time
+    x = timetable.readyToDepartArrDep(arrivalTime2, time, 1, 1, 2, vehiclesWaiting)
     assert(x, "Shouldn't wait for train")
 end
 
