@@ -1034,7 +1034,7 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
     local debounceMin = api.gui.comp.DoubleSpinBox.new()
     debounceMin:setMinimum(0,false)
     debounceMin:setMaximum(59,false)
-    if debounceType == "auto_debounce" then
+    if debounceType == "auto_debounce" and type(frequency) == "table" then
         debounceMin:setMaximum(frequency.min,false)
     end
 
