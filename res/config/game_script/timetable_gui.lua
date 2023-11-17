@@ -771,12 +771,12 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     separationCombo:setGravity(1,0)
     
     -- setup generate button
-    local generate = function()
-        if separationCombo:getCurrentIndex() == -1 then return end  -- no separation selected
-        local templateArrDep = conditions[1]
+    local generate = function(separationIndex, templateArrDep)
+        if separationIndex  == -1 then return end
+        if templateArrDep  == -1 then return end
 
         -- generate recurring conditions
-        local separation = separationList[separationCombo:getCurrentIndex() + 1]
+        local separation = separationList[separationIndex + 1]
         for i = 1, 60 / separation - 1 do
             timetable.addCondition(lineID,stationID, {type = "ArrDep", ArrDep = {timetable.shiftSlot(templateArrDep, i * separation * 60)}})
         end
@@ -794,23 +794,32 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     generateButton:setGravity(1, 0)
     generateButton:onClick(function()
         -- preparation
-        conditions = timetable.getConditions(lineID,stationID, "ArrDep")
-        if conditions == -1 then return end
-        if #conditions < 1 then
-        elseif #conditions > 1 then
+        local conditions = timetable.getConditions(lineID,stationID, "ArrDep")
+        if conditions == -1 or #conditions < 1 then
+            timetableGUI.popUpMessage("You must have one initial arrival / departure time", function() end)
+            return
+        end
+
+        local separationIndex = separationCombo:getCurrentIndex()
+        if separationIndex == -1 then -- no separation selected
+            timetableGUI.popUpMessage("You must select a separation", function() end)
+            return
+        end
+
+        if #conditions > 1 then
             generateButton:setEnabled(false)
             -- "Regenerate will replace current timetable"
-            timetableGUI.popUp("Override?", function()
-                condition1 = conditions[1]
+            timetableGUI.popUpYesNo("Override?", function()
+                local condition1 = conditions[1]
                 timetable.removeAllConditions(lineID, stationID, "ArrDep")
                 timetable.addCondition(lineID, stationID, {type = "ArrDep", ArrDep = {condition1}})
-                generate()
+                generate(separationIndex, condition1)
                 generateButton:setEnabled(true)
             end, function()
                 generateButton:setEnabled(true)
             end)
         else
-            generate()
+            generate(separationIndex, conditions[1])
         end
     end)
 
@@ -840,7 +849,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     deleteButton:onClick(function()
         deleteButton:setEnabled(false)
 
-        timetableGUI.popUp("Delete All?", function()
+        timetableGUI.popUpYesNo("Delete All?", function()
             timetable.removeAllConditions(lineID, stationID, "ArrDep")
             timetableChanged = true
             clearConstraintWindowLaterHACK = function()
@@ -899,7 +908,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         local deleteButton = api.gui.comp.Button.new(deleteLabel, true)
         deleteButton:onClick(function()
             deleteButton:setEnabled(false)
-            timetableGUI.popUp("Delete?", function()
+            timetableGUI.popUpYesNo("Delete?", function()
                 timetable.removeCondition(lineID, stationID, "ArrDep", k)
                 timetableChanged = true
                 clearConstraintWindowLaterHACK = function()
@@ -1086,7 +1095,28 @@ end
 --------------------- OTHER ---------------------------------
 -------------------------------------------------------------
 
-function timetableGUI.popUp(title, onYes, onNo)
+function timetableGUI.popUpMessage(message, onOK)
+    debugPrint("popUpMessage")
+    if menu.popUp then
+        menu.popUp:close()
+    end
+
+    local okButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("OK"), true)
+    menu.popUp = api.gui.comp.Window.new(message, okButton)
+    local position = api.gui.util.getMouseScreenPos()
+    menu.popUp:setPosition(position.x, position.y)
+    menu.popUp:addHideOnCloseHandler()
+
+    menu.popUp:onClose(function()
+        onOK()
+    end)
+
+    okButton:onClick(function()
+        menu.popUp:close()
+    end)
+end
+
+function timetableGUI.popUpYesNo(title, onYes, onNo)
     if menu.popUp then
         menu.popUp:close()
     end
