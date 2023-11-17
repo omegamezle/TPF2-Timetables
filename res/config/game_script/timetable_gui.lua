@@ -794,17 +794,19 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     generateButton:setGravity(1, 0)
     generateButton:onClick(function()
         -- preparation
-        local separationIndex = separationCombo:getCurrentIndex()
-        if separationIndex == -1 then -- no separation selected
-            timetableGUI.popUpMessage("You must select a separation first", function() end)
-            return
-        end
-        
         local conditions = timetable.getConditions(lineID,stationID, "ArrDep")
         if conditions == -1 or #conditions < 1 then
-            timetableGUI.popUpMessage("You must have one initial arrival / departure time", function() end) 
+            timetableGUI.popUpMessage("You must have one initial arrival / departure time", function() end)
             return
-        elseif #conditions > 1 then
+        end
+
+        local separationIndex = separationCombo:getCurrentIndex()
+        if separationIndex == -1 then -- no separation selected
+            timetableGUI.popUpMessage("You must select a separation", function() end)
+            return
+        end
+
+        if #conditions > 1 then
             generateButton:setEnabled(false)
             -- "Regenerate will replace current timetable"
             timetableGUI.popUpYesNo("Override?", function()
