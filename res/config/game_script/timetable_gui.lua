@@ -232,10 +232,12 @@ function timetableGUI.initStationTable()
         UIState.boxlayout2:addItem(menu.stationScrollArea,0.5,0)
     end
 
+    menu.stationTableHeader = api.gui.comp.Table.new(1, 'NONE')
     menu.stationTable = api.gui.comp.Table.new(4, 'SINGLE')
     menu.stationTable:setColWidth(0,40)
     menu.stationTable:setColWidth(1,120)
-    menu.stationScrollArea:setContent(menu.stationTable)
+    menu.stationTableHeader:addRow({menu.stationTable})
+    menu.stationScrollArea:setContent(menu.stationTableHeader)
 end
 
 function timetableGUI.initConstraintTable()
@@ -491,13 +493,8 @@ function timetableGUI.fillStationTable(index, bool)
 
     UIState.currentlySelectedLineTableIndex = index
     local lineID = timetableHelper.getAllLines()[index+1].id
-
-
-    local header1 = api.gui.comp.TextView.new(UIStrings.frequency .. " " .. timetableHelper.getFrequencyString(lineID))
-    local header2 = api.gui.comp.TextView.new("")
-    local header3 = api.gui.comp.TextView.new("")
-    local header4 = api.gui.comp.TextView.new("")
-    menu.stationTable:setHeader({header1,header2, header3, header4})
+    local headerTable = timetableGUI.stationTableHeader(lineID)
+    menu.stationTableHeader:setHeader({headerTable})
 
     local stationLegTime = timetableHelper.getLegTimes(lineID)
     --iterate over all stations to display them
@@ -607,6 +604,77 @@ function timetableGUI.fillStationTable(index, bool)
     end)
 end
 
+function timetableGUI.stationTableHeader(lineID)
+    -- force departure setting
+    local forceDepLabel = api.gui.comp.TextView.new("Force departure")
+    forceDepLabel:setGravity(1,0.5)
+    local forceDepImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
+    if timetable.getForceDepartureEnabled(lineID) then forceDepImage:setImage("ui/checkbox1.tga", false) end
+    local forceDepButton = api.gui.comp.Button.new(forceDepImage, true)
+    forceDepButton:setStyleClassList({"timetable-activateTimetableButton"})
+    forceDepButton:setGravity(0,0.5)
+    forceDepButton:onClick(function()
+        local forceDepEnabled = timetable.getForceDepartureEnabled(lineID)
+        if forceDepEnabled then
+            timetable.setForceDepartureEnabled(lineID, false)
+            forceDepImage:setImage("ui/checkbox0.tga", false)
+        else
+            timetable.setForceDepartureEnabled(lineID, true)
+            forceDepImage:setImage("ui/checkbox1.tga", false)
+        end
+        timetableChanged = true
+    end)
+
+    -- minimum wait setting
+    local minButtonLabel = api.gui.comp.TextView.new("Min. wait enabled")
+    minButtonLabel:setGravity(1,0.5)
+    local minButtonImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
+    if timetable.getMinWaitEnabled(lineID) then minButtonImage:setImage("ui/checkbox1.tga", false) end
+    local minButton = api.gui.comp.Button.new(minButtonImage, true)
+    minButton:setStyleClassList({"timetable-activateTimetableButton"})
+    minButton:setGravity(0,0.5)
+    minButton:onClick(function()
+        local minEnabled = timetable.getMinWaitEnabled(lineID)
+        if minEnabled then
+            timetable.setMinWaitEnabled(lineID, false)
+            minButtonImage:setImage("ui/checkbox0.tga", false)
+        else
+            timetable.setMinWaitEnabled(lineID, true)
+            minButtonImage:setImage("ui/checkbox1.tga", false)
+        end
+        timetableChanged = true
+    end)
+
+    -- maximum wait setting
+    local maxButtonLabel = api.gui.comp.TextView.new("Max. wait enabled")
+    maxButtonLabel:setGravity(1,0.5)
+    local maxButtonImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
+    if timetable.getMaxWaitEnabled(lineID) then maxButtonImage:setImage("ui/checkbox1.tga", false) end
+    local maxButton = api.gui.comp.Button.new(maxButtonImage, true)
+    maxButton:setStyleClassList({"timetable-activateTimetableButton"})
+    maxButton:setGravity(0,0.5)
+    maxButton:onClick(function()
+        local maxEnabled = timetable.getMaxWaitEnabled(lineID)
+        if maxEnabled then
+            timetable.setMaxWaitEnabled(lineID, false)
+            maxButtonImage:setImage("ui/checkbox0.tga", false)
+        else
+            timetable.setMaxWaitEnabled(lineID, true)
+            maxButtonImage:setImage("ui/checkbox1.tga", false)
+        end
+        timetableChanged = true
+    end)
+
+    local headerTable = api.gui.comp.Table.new(7, 'None')
+    headerTable:addRow({
+        api.gui.comp.TextView.new(UIStrings.frequency .. " " .. timetableHelper.getFrequencyString(lineID)),
+        forceDepLabel, forceDepButton, minButtonLabel, minButton, maxButtonLabel, maxButton
+    })
+    --headerTable:addRow({})
+
+    return headerTable
+end
+
 -------------------------------------------------------------
 ---------------------- Right TABLE --------------------------
 -------------------------------------------------------------
@@ -647,6 +715,7 @@ function timetableGUI.fillConstraintTable(index,lineID)
         local constraintType = timetableHelper.constraintIntToString(i)
         timetable.setConditionType(lineID, index, constraintType)
         conditions = timetable.getConditions(lineID, index, constraintType)
+        if conditions == -1 then return end
         if constraintType == "debounce" then
             if not conditions[1] then conditions[1] = 0 end
             if not conditions[2] then conditions[2] = 0 end
@@ -688,51 +757,10 @@ function timetableGUI.fillConstraintTable(index,lineID)
     end)
 end
 
-
 function timetableGUI.makeArrDepWindow(lineID, stationID)
     if not menu.constraintTable then return end
     local conditions = timetable.getConditions(lineID,stationID, "ArrDep")
-
-    -- minimum maximum setting
-    local minButtonImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
-    if timetable.getMinWaitEnabled(lineID) then minButtonImage:setImage("ui/checkbox1.tga", false) end
-    local minButton = api.gui.comp.Button.new(minButtonImage, true)
-    minButton:setStyleClassList({"timetable-activateTimetableButton"})
-    minButton:setGravity(1,0.5)
-    minButton:onClick(function()
-        local minEnabled = timetable.getMinWaitEnabled(lineID)
-        if minEnabled then
-            timetable.setMinWaitEnabled(lineID, false)
-            minButtonImage:setImage("ui/checkbox0.tga", false)
-        else
-            timetable.setMinWaitEnabled(lineID, true)
-            minButtonImage:setImage("ui/checkbox1.tga", false)
-        end
-        timetableChanged = true
-    end)
-
-    local maxButtonImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
-    if timetable.getMaxWaitEnabled(lineID) then maxButtonImage:setImage("ui/checkbox1.tga", false) end
-    local maxButton = api.gui.comp.Button.new(maxButtonImage, true)
-    maxButton:setStyleClassList({"timetable-activateTimetableButton"})
-    maxButton:setGravity(1,0.5)
-    maxButton:onClick(function()
-        local maxEnabled = timetable.getMaxWaitEnabled(lineID)
-        if maxEnabled then
-            timetable.setMaxWaitEnabled(lineID, false)
-            maxButtonImage:setImage("ui/checkbox0.tga", false)
-        else
-            timetable.setMaxWaitEnabled(lineID, true)
-            maxButtonImage:setImage("ui/checkbox1.tga", false)
-        end
-        timetableChanged = true
-    end)
-
-    local settingsTable = api.gui.comp.Table.new(4, 'NONE')
-    settingsTable:addRow({
-        api.gui.comp.TextView.new("Min. wait enabled"), minButton, 
-        api.gui.comp.TextView.new("Max. wait enabled"), maxButton})
-    menu.constraintTable:addRow({settingsTable})
+    if conditions == -1 then return end
 
     -- setup separation selector
     local separationList = {30, 20, 15, 12, 10, 7.5, 6, 5, 4, 3, 2.5, 2, 1.5, 1.2, 1}
@@ -750,7 +778,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         -- generate recurring conditions
         local separation = separationList[separationCombo:getCurrentIndex() + 1]
         for i = 1, 60 / separation - 1 do
-            timetable.addCondition(lineID,stationID, {type = "ArrDep", ArrDep = {timetable.shiftConstraint(templateArrDep, i * separation * 60)}})
+            timetable.addCondition(lineID,stationID, {type = "ArrDep", ArrDep = {timetable.shiftSlot(templateArrDep, i * separation * 60)}})
         end
 
         -- cleanup
@@ -767,6 +795,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     generateButton:onClick(function()
         -- preparation
         conditions = timetable.getConditions(lineID,stationID, "ArrDep")
+        if conditions == -1 then return end
         if #conditions < 1 then
         elseif #conditions > 1 then
             generateButton:setEnabled(false)
@@ -963,15 +992,17 @@ end
 function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
     if not menu.constraintTable then return end
     local frequency = timetableHelper.getFrequencyMinSec(lineID)
-    local condition2 = timetable.getConditions(lineID,stationID, debounceType)
+    local condition = timetable.getConditions(lineID,stationID, debounceType)
+    if condition == -1 then return end
     local autoDebounceMin = nil
     local autoDebounceSec = nil
 
     local updateAutoDebounce = function()
         if debounceType == "auto_debounce" then
-            condition2 = timetable.getConditions(lineID, stationID, debounceType)
-            if type(frequency) == "table" and autoDebounceMin and autoDebounceSec and condition2 and condition2[1] and condition2[2] then
-                local unbunchTime = (frequency.min - condition2[1]) * 60 + frequency.sec - condition2[2]
+            condition = timetable.getConditions(lineID, stationID, debounceType)
+            if condition == -1 then return end
+            if type(frequency) == "table" and autoDebounceMin and autoDebounceSec and condition and condition[1] and condition[2] then
+                local unbunchTime = (frequency.min - condition[1]) * 60 + frequency.sec - condition[2]
                 if unbunchTime >= 0 then
                     autoDebounceMin:setText(tostring(math.floor(unbunchTime / 60)))
                     autoDebounceSec:setText(tostring(math.floor(unbunchTime % 60)))
@@ -1015,8 +1046,8 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
         updateAutoDebounce()
     end)
 
-    if condition2 and condition2[1] then
-        debounceMin:setValue(condition2[1],false)
+    if condition and condition[1] then
+        debounceMin:setValue(condition[1],false)
     end
 
 
@@ -1032,8 +1063,8 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
         updateAutoDebounce()
     end)
 
-    if condition2 and condition2[2] then
-        debounceSec:setValue(condition2[2],false)
+    if condition and condition[2] then
+        debounceSec:setValue(condition[2],false)
     end
 
     local unbunchTimeHeader = api.gui.comp.TextView.new(UIStrings.unbunch_time .. ":")
