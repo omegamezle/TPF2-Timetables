@@ -425,8 +425,8 @@ end
 function timetable.getForceDepartureEnabled(line)
     if timetableObject[line] then
         -- if true or nil
-        if timetableObject[line].forceDeparture ~= false then
-            return true
+        if timetableObject[line].forceDeparture ~= true then
+            return false
         end
     end
 
