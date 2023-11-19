@@ -975,12 +975,11 @@ function timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
         insertButton:onClick(function()
             timetable.insertArrDepCondition(lineID, stationID, k, {0,0,0,0})
             timetableChanged = true
-            clearConstraintWindowLaterHACK = function()
-                timetableGUI.initStationTable()
-                timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-                timetableGUI.clearConstraintWindow()
-                timetableGUI.makeArrDepWindow(lineID, stationID)
-            end
+            timetableGUI.initStationTable()
+            timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+            menu.constraintTable:invokeLater( function ()
+                timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
+            end)
         end)
 
         local linetable2 = api.gui.comp.Table.new(5, 'NONE')
