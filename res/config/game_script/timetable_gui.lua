@@ -850,12 +850,10 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         timetableGUI.popUpYesNo("Delete All?", function()
             timetable.removeAllConditions(lineID, stationID, "ArrDep")
             timetableChanged = true
-            clearConstraintWindowLaterHACK = function()
-                timetableGUI.initStationTable()
-                timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-                timetableGUI.clearConstraintWindow()
-                timetableGUI.makeArrDepWindow(lineID, stationID)
-            end
+            timetableGUI.initStationTable()
+            timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+            timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
+            
             deleteButton:setEnabled(true)
         end, function()
             deleteButton:setEnabled(true)
