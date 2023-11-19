@@ -835,12 +835,10 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     addButton:onClick(function()
         timetable.addCondition(lineID,stationID, {type = "ArrDep", ArrDep = {{0,0,0,0}}})
         timetableChanged = true
-        clearConstraintWindowLaterHACK = function()
+
             timetableGUI.initStationTable()
             timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-            timetableGUI.clearConstraintWindow()
-            timetableGUI.makeArrDepWindow(lineID, stationID)
-        end
+            timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
     end)
 
     -- setup deleteButton button
