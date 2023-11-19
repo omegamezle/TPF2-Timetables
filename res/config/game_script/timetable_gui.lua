@@ -591,13 +591,14 @@ function timetableGUI.fillStationTable(index, bool)
             timetableGUI.initConstraintTable()
             timetableGUI.fillConstraintTable(tableIndex,lineID)
         end
-
     end)
 
     -- keep track of currently selected station and resets if nessesarry
     if UIState.currentlySelectedStationIndex then
         if menu.stationTable:getNumRows() > UIState.currentlySelectedStationIndex and not(menu.stationTable:getNumRows() == 0) then
             menu.stationTable:select(UIState.currentlySelectedStationIndex, bool)
+        else
+            timetableGUI.initConstraintTable()
         end
     end
     menu.stationScrollArea:invokeLater(function () 
@@ -735,6 +736,7 @@ function timetableGUI.fillConstraintTable(index,lineID)
         end
 
         timetableGUI.clearConstraintWindow()
+        menu.constraintContentTable:deleteAll()
         if i == 1 then
             timetableGUI.makeArrDepWindow(lineID, index)
         elseif i == 2 then
@@ -1007,8 +1009,6 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
     if condition == -1 then return end
     local autoDebounceMin = nil
     local autoDebounceSec = nil
-
-    menu.constraintContentTable:deleteAll()
 
     local updateAutoDebounce = function()
         if debounceType == "auto_debounce" then
