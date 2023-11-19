@@ -916,12 +916,12 @@ function timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
             timetableGUI.popUpYesNo("Delete?", function()
                 timetable.removeCondition(lineID, stationID, "ArrDep", k)
                 timetableChanged = true
-                clearConstraintWindowLaterHACK = function()
-                    timetableGUI.initStationTable()
-                    timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-                    timetableGUI.clearConstraintWindow()
-                    timetableGUI.makeArrDepWindow(lineID, stationID)
-                end
+                timetableGUI.initStationTable()
+                timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+                menu.constraintTable:invokeLater( function ()
+                    timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
+                end)
+
                 deleteButton:setEnabled(true)
             end, function()
                 deleteButton:setEnabled(true)
@@ -1009,6 +1009,8 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
     if condition == -1 then return end
     local autoDebounceMin = nil
     local autoDebounceSec = nil
+
+    menu.constraintContentTable:deleteAll()
 
     local updateAutoDebounce = function()
         if debounceType == "auto_debounce" then
