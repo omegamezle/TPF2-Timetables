@@ -19,7 +19,6 @@ local co = nil
 local state = nil
 
 local timetableChanged = false
-local clearConstraintWindowLaterHACK = nil
 
 local stationTableScrollOffset
 local lineTableScrollOffset
@@ -1231,10 +1230,6 @@ function data()
             if timetableChanged then
                 game.interface.sendScriptEvent("timetableUpdate", "", timetable.getTimetableObject())
                 timetableChanged = false
-            end
-            if clearConstraintWindowLaterHACK then
-                clearConstraintWindowLaterHACK()
-                clearConstraintWindowLaterHACK = nil
             end
 
             if not clockstate then
