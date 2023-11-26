@@ -596,7 +596,7 @@ end
 ---Find the next valid timetable slot for given slots and arrival time
 ---@param slots table in format like: {{30,0,59,0},{9,0,59,0}}
 ---@param arrivalTime number in seconds
----@param waitingVehicles table in format like: {{30,0,59,0}, {9,0,59,0}}
+---@param waitingVehicles table in format like: {{departureTime=59, slot={30,0,59,0}}, {departureTime=119, slot={9,0,59,0}}}
 ---@return table closestSlot example: {30,0,59,0}
 function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
     -- Put the slots in chronological order by arrival time
@@ -629,10 +629,15 @@ function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
         end
     else
         for vehicle, waitingVehicle in pairs(waitingVehicles) do
-            if arrivalTime <= waitingVehicle.departureTime then
-                waitingSlots[vehicle] = waitingVehicle.slot
+            local departureTime = waitingVehicle.departureTime
+            local slot = waitingVehicle.slot
+            -- Remove waitingVehicle if it is in invalid format
+            if not (departureTime and slot) then
+                waitingVehicles[vehicle] = nil
+            elseif arrivalTime <= departureTime then
+                waitingSlots[vehicle] = slot
             else
-                departedSlots[vehicle] = waitingVehicle.slot
+                departedSlots[vehicle] = slot
             end
         end
     end
