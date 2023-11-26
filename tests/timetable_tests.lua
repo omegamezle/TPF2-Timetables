@@ -445,6 +445,16 @@ timetableTests[#timetableTests + 1] = function()
     assert(x, "Shouldn't wait for train")
 end
 
+-- test for issue 55, checking getNextSot with old waitingVehicles
+timetableTests[#timetableTests + 1] = function()
+    local slots = {{30,0,59,0},{9,0,59,0}}
+    local arrivalTime = 0
+    local waitingVehicles = {{30,0,59,0}, {9,0,59,0}}
+    
+    timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
+end
+
+
 return {
     test = function()
         for k,v in pairs(timetableTests) do
