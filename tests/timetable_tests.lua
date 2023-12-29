@@ -445,6 +445,27 @@ timetableTests[#timetableTests + 1] = function()
     assert(x, "Shouldn't wait for train")
 end
 
+-- Tests for issue #58: VehiclesWaiting is nil
+timetableTests[#timetableTests + 1] = function()
+    timetable.setTimetableObject({})
+    local vehiclesWaiting = {
+        [1] = {
+            departureTime = 3540,
+            slot = { 30, 0, 59, 0 },
+        },
+        [2] = {
+            departureTime = 7140,
+            slot = { 9, 0, 59, 0 },
+        },
+    }
+    local x = timetable.getNextSlot({{30,0,59,0},{9,0,59,0}}, (9*60 + 60*60), vehiclesWaiting)
+    assert(x[1] == 30, "Slot with 30 minute arrival should be chosen")
+    -- Reasoning: vehicleWaiting 1 (30:00 arrival) has departed, vehicleWaiting 2 (09:00 arrival) is waiting. 
+    -- Vehicle 2 arrives before vehicle 1 departs, so vehicle 1 doesn't get removed from the vehiclesWaiting.
+    -- Vehicle 3 arrives at 09:00, but shouldn't take this time as vehicle 2 is still waiting.
+    -- Instead vehicle 1 should get removed from vehiclesWaiting, and vehicle 3 can pick this timetable slot up.
+end
+
 return {
     test = function()
         for k,v in pairs(timetableTests) do
