@@ -445,15 +445,35 @@ timetableTests[#timetableTests + 1] = function()
     assert(x, "Shouldn't wait for train")
 end
 
--- test for issue 55, checking getNextSot with old waitingVehicles
+-- Test for issue 55, checking getNextSot with old vehiclesWaiting
 timetableTests[#timetableTests + 1] = function()
     local slots = {{30,0,59,0},{9,0,59,0}}
     local arrivalTime = 0
-    local waitingVehicles = {{30,0,59,0}, {9,0,59,0}}
+    local vehiclesWaiting = {{30,0,59,0}, {9,0,59,0}}
     
-    timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
+    timetable.getNextSlot(slots, arrivalTime, vehiclesWaiting)
 end
 
+-- Tests for issue #58: VehiclesWaiting is nil
+timetableTests[#timetableTests + 1] = function()
+    timetable.setTimetableObject({})
+    local vehiclesWaiting = {
+        [1] = {
+            departureTime = 3540,
+            slot = { 30, 0, 59, 0 },
+        },
+        [2] = {
+            departureTime = 7140,
+            slot = { 9, 0, 59, 0 },
+        },
+    }
+    local x = timetable.getNextSlot({{30,0,59,0},{9,0,59,0}}, (9*60 + 60*60), vehiclesWaiting)
+    assert(x[1] == 30, "Slot with 30 minute arrival should be chosen")
+    -- Reasoning: vehicleWaiting 1 (30:00 arrival) has departed, vehicleWaiting 2 (09:00 arrival) is waiting. 
+    -- Vehicle 2 arrives before vehicle 1 departs, so vehicle 1 doesn't get removed from vehiclesWaiting on 2s arrival.
+    -- Vehicle 3 arrives at 09:00, but shouldn't take this slot as vehicle 2 is still waiting with it allocated.
+    -- Instead vehicle 1 should get removed from vehiclesWaiting, and vehicle 3 can pick this timetable slot up.
+end
 
 return {
     test = function()

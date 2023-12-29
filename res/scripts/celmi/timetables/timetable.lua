@@ -596,9 +596,9 @@ end
 ---Find the next valid timetable slot for given slots and arrival time
 ---@param slots table in format like: {{30,0,59,0},{9,0,59,0}}
 ---@param arrivalTime number in seconds
----@param waitingVehicles table in format like: {{departureTime=59, slot={30,0,59,0}}, {departureTime=119, slot={9,0,59,0}}}
+---@param vehiclesWaiting table in format like: {[1]={slot={30,0,59,0}, departureTime=3540}, [2]={slot={9,0,59,0}, departureTime=3540}}
 ---@return table closestSlot example: {30,0,59,0}
-function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
+function timetable.getNextSlot(slots, arrivalTime, vehiclesWaiting)
     -- Put the slots in chronological order by arrival time
     table.sort(slots, function(slot1, slot2)
         local arrivalSlot1 = timetable.slotToArrivalSlot(slot1)
@@ -624,16 +624,16 @@ function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
     local waitingSlots = {}
     local departedSlots = {}
     if #slots == 1 then
-        for vehicle, _ in pairs(waitingVehicles) do
-            waitingVehicles[vehicle] = nil
+        for vehicle, _ in pairs(vehiclesWaiting) do
+            vehiclesWaiting[vehicle] = nil
         end
     else
-        for vehicle, waitingVehicle in pairs(waitingVehicles) do
+        for vehicle, waitingVehicle in pairs(vehiclesWaiting) do
             local departureTime = waitingVehicle.departureTime
             local slot = waitingVehicle.slot
             -- Remove waitingVehicle if it is in invalid format
             if not (departureTime and slot) then
-                waitingVehicles[vehicle] = nil
+                vehiclesWaiting[vehicle] = nil
             elseif arrivalTime <= departureTime then
                 waitingSlots[vehicle] = slot
             else
@@ -655,6 +655,7 @@ function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
             -- if the nearest slot is still waiting, then all departedSlots can be removed
             for vehicle, _ in pairs(departedSlots) do
                 vehiclesWaiting[vehicle] = nil
+                departedSlots[vehicle] = nil
             end
         else
             -- if the nearest slot is a departed, all other departedSlots can be removed
@@ -662,7 +663,8 @@ function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
                 if timetable.slotsEqual(slot, departedSlot) then
                     slotAvailable = false
                 else
-                    waitingVehicles[vehicle] = nil
+                    vehiclesWaiting[vehicle] = nil
+                    departedSlots[vehicle] = nil
                 end
             end
         end
