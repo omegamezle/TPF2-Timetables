@@ -629,10 +629,15 @@ function timetable.getNextSlot(slots, arrivalTime, vehiclesWaiting)
         end
     else
         for vehicle, waitingVehicle in pairs(vehiclesWaiting) do
-            if arrivalTime <= waitingVehicle.departureTime then
-                waitingSlots[vehicle] = waitingVehicle.slot
+            local departureTime = waitingVehicle.departureTime
+            local slot = waitingVehicle.slot
+            -- Remove waitingVehicle if it is in invalid format
+            if not (departureTime and slot) then
+                vehiclesWaiting[vehicle] = nil
+            elseif arrivalTime <= departureTime then
+                waitingSlots[vehicle] = slot
             else
-                departedSlots[vehicle] = waitingVehicle.slot
+                departedSlots[vehicle] = slot
             end
         end
     end
