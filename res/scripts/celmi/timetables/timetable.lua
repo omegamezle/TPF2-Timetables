@@ -1,4 +1,5 @@
 local timetableHelper = require "celmi/timetables/timetable_helper"
+local guard = require "celmi/timetables/guard"
 
 --[[
 timetable = {
@@ -332,17 +333,17 @@ function timetable.readyToDepart(vehicle, arrivalTime, vehicles, line, stop)
     local time = timetableHelper.getTime()
 
     if conditionType == "ArrDep" then
-        return timetable.readyToDepartArrDep(arrivalTime, time, line, stop, vehicle, vehiclesWaiting)
+        return timetable.readyToDepartArrDep(vehicle, arrivalTime, vehicles, time, line, stop, vehiclesWaiting)
     elseif conditionType == "debounce" or conditionType == "auto_debounce" then
         local debounceIsManual = conditionType == "debounce"
-        return timetable.readyToDepartDebounce(debounceIsManual, vehicle, arrivalTime, vehicles, time, line, stop, vehiclesWaiting)
+        return timetable.readyToDepartDebounce(vehicle, arrivalTime, vehicles, time, line, stop, vehiclesWaiting, debounceIsManual)
     end
 end
 
 ---Gets the time a vehicle needs to wait for
 ---@param slot table in format like: {28, 45, 30, 00}
----@param arrivalTime int for the time of arrival: 1740
----@return int wait time: 60
+---@param arrivalTime integer for the time of arrival: 1740
+---@return integer wait time: 60
 function timetable.getWaitTime(slot, arrivalTime)
     local arrivalSlot = timetable.slotToArrivalSlot(slot)
     local departureSlot = timetable.slotToDepartureSlot(slot)
@@ -358,11 +359,11 @@ end
 
 ---Gets the departure time for a vehicle
 ---Takes into account min and max wait times when enabled
----@param line int the line the vehicle is only
----@param stopInfo table the info for the stop on the line the vehicle is in
----@param arrivalTime int the time the vehicle anotherVehicleArrivedEarlier
----@param waitTime int the time the vehicle should wait for given its timetable slot
----@return int the time the vehicle should depart
+---@param line integer the line the vehicle is only
+---@param stop integer the stop on the line the vehicle is in
+---@param arrivalTime integer the time the vehicle anotherVehicleArrivedEarlier
+---@param waitTime integer the time the vehicle should wait for given its timetable slot
+---@return integer time the vehicle should depart
 function timetable.getDepartureTime(line, stop, arrivalTime, waitTime)
     local lineInfo = timetableHelper.getLineInfo(line)
     local stopInfo = lineInfo.stops[stop]
@@ -382,32 +383,48 @@ function timetable.getDepartureTime(line, stop, arrivalTime, waitTime)
     return arrivalTime + waitTime
 end
 
-function timetable.readyToDepartArrDep(arrivalTime, currentTime, line, stop, vehicle, vehiclesWaiting)
+---Find the next valid timetable slot for given slots and arrival time
+---@param vehicle integer The vehicle ID
+---@param doorsTime integer The arrival time in seconds, calculated by the time the door opened.
+---@param vehicles table Of vehicle IDs on this line. Currently unused.
+---@param currentTime integer in seconds.
+---@param line integer The line ID.
+---@param stop integer The stop index (of the line).
+---@param vehiclesWaiting table in format like: {[1]={arrivalTime=1800, slot={30,0,59,0}, departureTime=3540}, [2]={arrivalTime=540, slot={9,0,59,0}, departureTime=3540}}
+---@return boolean readyToDepart True if ready. False if waiting.
+function timetable.readyToDepartArrDep(vehicle, doorsTime, vehicles, currentTime, line, stop, vehiclesWaiting)
     local slots = timetableObject[line].stations[stop].conditions.ArrDep
     if not slots or slots == {} then
         timetableObject[line].stations[stop].conditions.type = "None"
-        return
+        -- If there aren't any timetable slots, then the vehicle should depart now.
+        return true
     end
 
     local slot = nil
     local departureTime = nil
     local validSlot = nil
-    if vehiclesWaiting[vehicle] then
+    if  vehiclesWaiting[vehicle] then
+        local arrivalTime = vehiclesWaiting[vehicle].arrivalTime
         slot = vehiclesWaiting[vehicle].slot
         departureTime = vehiclesWaiting[vehicle].departureTime
-        -- the latest arrival time for a 00:00 departure slot is 29:59
-        -- this makes the slot invalid in the departure time is too far in the past
-        if slot and departureTime then
-            if departureTime + 30 * 60 > arrivalTime  then
-                validSlot = timetable.arrayContainsSlot(slot, slots)
-            end
+
+        -- Make sure the timetable slot for this vehicle isn't old. If it is old, remove it.
+        if not arrivalTime or arrivalTime < doorsTime then
+            vehiclesWaiting[vehicle] = nil
+        elseif slot and departureTime then
+            validSlot = timetable.arrayContainsSlot(slot, slots)
         end
     end
     if not validSlot then
-        slot = timetable.getNextSlot(slots, arrivalTime, vehiclesWaiting)
-        local waitTime = timetable.getWaitTime(slot, arrivalTime)
-        departureTime = timetable.getDepartureTime(line, stop, arrivalTime, waitTime)
+        slot = timetable.getNextSlot(slots, doorsTime, vehiclesWaiting)
+        -- getNextSlot returns nil when there are no slots. We should depart ASAP.
+        if (slot == nil) then
+            return true
+        end
+        local waitTime = timetable.getWaitTime(slot, doorsTime)
+        departureTime = timetable.getDepartureTime(line, stop, doorsTime, waitTime)
         vehiclesWaiting[vehicle] = {
+            arrivalTime = doorsTime,
             slot = slot,
             departureTime = departureTime
         }
@@ -467,7 +484,7 @@ function timetable.getMaxWaitEnabled(line)
     return false
 end
 
-function timetable.readyToDepartDebounce(debounceIsManual, vehicle, arrivalTime, vehicles, time, line, stop, vehiclesWaiting)
+function timetable.readyToDepartDebounce(vehicle, arrivalTime, vehicles, time, line, stop, vehiclesWaiting, debounceIsManual)
     local departureTime = nil
 
     if vehiclesWaiting[vehicle] then
@@ -558,7 +575,7 @@ function timetable.setHasTimetable(line, bool)
 end
 
 --- Start all vehicles of given line.
----@param line table line id
+---@param line number line id
 function timetable.restartAutoDepartureForAllLineVehicles(line)
     for _, vehicle in pairs(timetableHelper.getVehiclesOnLine(line)) do
         timetableHelper.restartAutoVehicleDeparture(vehicle)
@@ -596,9 +613,9 @@ end
 ---Find the next valid timetable slot for given slots and arrival time
 ---@param slots table in format like: {{30,0,59,0},{9,0,59,0}}
 ---@param arrivalTime number in seconds
----@param waitingVehicles table in format like: {{30,0,59,0}, {9,0,59,0}}
----@return table closestSlot example: {30,0,59,0}
-function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
+---@param vehiclesWaiting table in format like: {[1]={slot={30,0,59,0}, departureTime=3540}, [2]={slot={9,0,59,0}, departureTime=3540}}
+---@return table | nil closestSlot example: {30,0,59,0}
+function timetable.getNextSlot(slots, arrivalTime, vehiclesWaiting)
     -- Put the slots in chronological order by arrival time
     table.sort(slots, function(slot1, slot2)
         local arrivalSlot1 = timetable.slotToArrivalSlot(slot1)
@@ -624,15 +641,20 @@ function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
     local waitingSlots = {}
     local departedSlots = {}
     if #slots == 1 then
-        for vehicle, _ in pairs(waitingVehicles) do
-            waitingVehicles[vehicle] = nil
+        for vehicle, _ in pairs(vehiclesWaiting) do
+            vehiclesWaiting[vehicle] = nil
         end
     else
-        for vehicle, waitingVehicle in pairs(waitingVehicles) do
-            if arrivalTime <= waitingVehicle.departureTime then
-                waitingSlots[vehicle] = waitingVehicle.slot
+        for vehicle, waitingVehicle in pairs(vehiclesWaiting) do
+            local departureTime = waitingVehicle.departureTime
+            local slot = waitingVehicle.slot
+            -- Remove waitingVehicle if it is in invalid format
+            if not (departureTime and slot) then
+                vehiclesWaiting[vehicle] = nil
+            elseif arrivalTime <= departureTime then
+                waitingSlots[vehicle] = slot
             else
-                departedSlots[vehicle] = waitingVehicle.slot
+                departedSlots[vehicle] = slot
             end
         end
     end
@@ -650,6 +672,7 @@ function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
             -- if the nearest slot is still waiting, then all departedSlots can be removed
             for vehicle, _ in pairs(departedSlots) do
                 vehiclesWaiting[vehicle] = nil
+                departedSlots[vehicle] = nil
             end
         else
             -- if the nearest slot is a departed, all other departedSlots can be removed
@@ -657,7 +680,8 @@ function timetable.getNextSlot(slots, arrivalTime, waitingVehicles)
                 if timetable.slotsEqual(slot, departedSlot) then
                     slotAvailable = false
                 else
-                    waitingVehicles[vehicle] = nil
+                    vehiclesWaiting[vehicle] = nil
+                    departedSlots[vehicle] = nil
                 end
             end
         end
@@ -696,10 +720,12 @@ function timetable.slotsEqual(slot1, slot2)
 end
 
 function timetable.slotToArrivalSlot(slot)
+    guard.againstNil(slot)
     return timetable.minToSec(slot[1], slot[2])
 end
 
 function timetable.slotToDepartureSlot(slot)
+    guard.againstNil(slot)
     return timetable.minToSec(slot[3], slot[4])
 end
 
@@ -754,7 +780,7 @@ end
 ---Shifts a slot by some offset
 ---@param slot table in format like: {30,0,59,0}
 ---@param offset number in seconds 
----@return slot table shifted time, example: {31,0,0,0}
+---@return table slot shifted time, example: {31,0,0,0}
 function timetable.shiftSlot(slot, offset)
     local arrivalSlot = timetable.slotToArrivalSlot(slot)
     local shiftArr = timetable.shiftTime(arrivalSlot, offset)

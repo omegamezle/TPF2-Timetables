@@ -19,7 +19,6 @@ local co = nil
 local state = nil
 
 local timetableChanged = false
-local clearConstraintWindowLaterHACK = nil
 
 local stationTableScrollOffset
 local lineTableScrollOffset
@@ -253,6 +252,10 @@ function timetableGUI.initConstraintTable()
     end
 
     menu.constraintTable = api.gui.comp.Table.new(1, 'NONE')
+    menu.constraintHeaderTable = api.gui.comp.Table.new(1, 'NONE')
+    menu.constraintContentTable = api.gui.comp.Table.new(1, 'NONE')
+    menu.constraintTable:addRow({menu.constraintHeaderTable})
+    menu.constraintTable:addRow({menu.constraintContentTable})
     menu.scrollAreaConstraint:setContent(menu.constraintTable)
 end
 function timetableGUI.showLineMenu()
@@ -588,13 +591,14 @@ function timetableGUI.fillStationTable(index, bool)
             timetableGUI.initConstraintTable()
             timetableGUI.fillConstraintTable(tableIndex,lineID)
         end
-
     end)
 
     -- keep track of currently selected station and resets if nessesarry
     if UIState.currentlySelectedStationIndex then
         if menu.stationTable:getNumRows() > UIState.currentlySelectedStationIndex and not(menu.stationTable:getNumRows() == 0) then
             menu.stationTable:select(UIState.currentlySelectedStationIndex, bool)
+        else
+            timetableGUI.initConstraintTable()
         end
     end
     menu.stationScrollArea:invokeLater(function () 
@@ -681,17 +685,17 @@ end
 
 function timetableGUI.clearConstraintWindow()
     -- initial cleanup
-    menu.constraintTable:deleteRows(1, menu.constraintTable:getNumRows())
+    menu.constraintHeaderTable:deleteRows(1, menu.constraintHeaderTable:getNumRows())
 end
 
 function timetableGUI.fillConstraintTable(index,lineID)
     --initial cleanup
     if index == -1 then
-        menu.constraintTable:deleteAll()
+        menu.constraintHeaderTable:deleteAll()
         return
     end
     index = index + 1
-    menu.constraintTable:deleteAll()
+    menu.constraintHeaderTable:deleteAll()
 
 
     -- combobox setup
@@ -732,6 +736,7 @@ function timetableGUI.fillConstraintTable(index,lineID)
         end
 
         timetableGUI.clearConstraintWindow()
+        menu.constraintContentTable:deleteAll()
         if i == 1 then
             timetableGUI.makeArrDepWindow(lineID, index)
         elseif i == 2 then
@@ -748,7 +753,7 @@ function timetableGUI.fillConstraintTable(index,lineID)
 
     local table = api.gui.comp.Table.new(2, 'NONE')
     table:addRow({infoImage,comboBox})
-    menu.constraintTable:addRow({table})
+    menu.constraintHeaderTable:addRow({table})
     comboBox:setSelected(UIState.currentlySelectedConstraintType, true)
     menu.scrollAreaConstraint:invokeLater(function ()
         menu.scrollAreaConstraint:invokeLater(function () 
@@ -759,8 +764,7 @@ end
 
 function timetableGUI.makeArrDepWindow(lineID, stationID)
     if not menu.constraintTable then return end
-    local conditions = timetable.getConditions(lineID,stationID, "ArrDep")
-    if conditions == -1 then return end
+    if not menu.constraintHeaderTable then return end
 
     -- setup separation selector
     local separationList = {30, 20, 15, 12, 10, 7.5, 6, 5, 4, 3, 2.5, 2, 1.5, 1.2, 1}
@@ -783,12 +787,9 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
 
         -- cleanup
         timetableChanged = true
-        clearConstraintWindowLaterHACK = function()
-            timetableGUI.initStationTable()
-            timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-            timetableGUI.clearConstraintWindow()
-            timetableGUI.makeArrDepWindow(lineID, stationID)
-        end
+        timetableGUI.initStationTable()
+        timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+        timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
     end
     local generateButton = api.gui.comp.Button.new(api.gui.comp.TextView.new("Generate"), true)
     generateButton:setGravity(1, 0)
@@ -826,7 +827,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     -- setup recurring departure generator
     local recurringTable = api.gui.comp.Table.new(3, 'NONE')
     recurringTable:addRow({api.gui.comp.TextView.new("Separation"),separationCombo,generateButton})
-    menu.constraintTable:addRow({recurringTable})
+    menu.constraintHeaderTable:addRow({recurringTable})
 
 
     -- setup add button
@@ -835,12 +836,10 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     addButton:onClick(function()
         timetable.addCondition(lineID,stationID, {type = "ArrDep", ArrDep = {{0,0,0,0}}})
         timetableChanged = true
-        clearConstraintWindowLaterHACK = function()
+
             timetableGUI.initStationTable()
             timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-            timetableGUI.clearConstraintWindow()
-            timetableGUI.makeArrDepWindow(lineID, stationID)
-        end
+            timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
     end)
 
     -- setup deleteButton button
@@ -852,12 +851,10 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         timetableGUI.popUpYesNo("Delete All?", function()
             timetable.removeAllConditions(lineID, stationID, "ArrDep")
             timetableChanged = true
-            clearConstraintWindowLaterHACK = function()
-                timetableGUI.initStationTable()
-                timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-                timetableGUI.clearConstraintWindow()
-                timetableGUI.makeArrDepWindow(lineID, stationID)
-            end
+            timetableGUI.initStationTable()
+            timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+            timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
+            
             deleteButton:setEnabled(true)
         end, function()
             deleteButton:setEnabled(true)
@@ -870,11 +867,20 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
     headerTable:setColWidth(2,60)
     headerTable:setColWidth(3,60)
     headerTable:addRow({addButton,api.gui.comp.TextView.new(UIStrings.min),api.gui.comp.TextView.new(UIStrings.sec),deleteButton})
-    menu.constraintTable:addRow({headerTable})
+    menu.constraintHeaderTable:addRow({headerTable})
+
+    timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
+end
+
+function timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
+    local conditions = timetable.getConditions(lineID,stationID, "ArrDep")
+    if conditions == -1 then return end
+
+    menu.constraintContentTable:deleteAll()
 
     -- setup arrival and departure content
     for k,v in pairs(conditions) do
-        menu.constraintTable:addRow({api.gui.comp.Component.new("HorizontalLine")})
+        menu.constraintContentTable:addRow({api.gui.comp.Component.new("HorizontalLine")})
 
         local arivalLabel =  api.gui.comp.TextView.new(UIStrings.arrival .. ":  ")
         arivalLabel:setMinimumSize(api.gui.util.Size.new(75, 30))
@@ -911,12 +917,12 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
             timetableGUI.popUpYesNo("Delete?", function()
                 timetable.removeCondition(lineID, stationID, "ArrDep", k)
                 timetableChanged = true
-                clearConstraintWindowLaterHACK = function()
-                    timetableGUI.initStationTable()
-                    timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-                    timetableGUI.clearConstraintWindow()
-                    timetableGUI.makeArrDepWindow(lineID, stationID)
-                end
+                timetableGUI.initStationTable()
+                timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+                menu.constraintTable:invokeLater( function ()
+                    timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
+                end)
+
                 deleteButton:setEnabled(true)
             end, function()
                 deleteButton:setEnabled(true)
@@ -935,7 +941,7 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         linetable:setColWidth(2, 25)
         linetable:setColWidth(3, 60)
         linetable:setColWidth(4, 60)
-        menu.constraintTable:addRow({linetable})
+        menu.constraintContentTable:addRow({linetable})
 
         local departureLabel =  api.gui.comp.TextView.new(UIStrings.departure .. ":  ")
         departureLabel:setMinimumSize(api.gui.util.Size.new(75, 30))
@@ -970,12 +976,11 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         insertButton:onClick(function()
             timetable.insertArrDepCondition(lineID, stationID, k, {0,0,0,0})
             timetableChanged = true
-            clearConstraintWindowLaterHACK = function()
-                timetableGUI.initStationTable()
-                timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-                timetableGUI.clearConstraintWindow()
-                timetableGUI.makeArrDepWindow(lineID, stationID)
-            end
+            timetableGUI.initStationTable()
+            timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
+            menu.constraintTable:invokeLater( function ()
+                timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
+            end)
         end)
 
         local linetable2 = api.gui.comp.Table.new(5, 'NONE')
@@ -990,16 +995,15 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
         linetable2:setColWidth(2, 25)
         linetable2:setColWidth(3, 60)
         linetable2:setColWidth(4, 60)
-        menu.constraintTable:addRow({linetable2})
+        menu.constraintContentTable:addRow({linetable2})
 
 
-        menu.constraintTable:addRow({api.gui.comp.Component.new("HorizontalLine")})
+        menu.constraintContentTable:addRow({api.gui.comp.Component.new("HorizontalLine")})
     end
-
 end
 
 function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
-    if not menu.constraintTable then return end
+    if not menu.constraintHeaderTable then return end
     local frequency = timetableHelper.getFrequencyMinSec(lineID)
     local condition = timetable.getConditions(lineID,stationID, debounceType)
     if condition == -1 then return end
@@ -1032,7 +1036,7 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
         api.gui.comp.TextView.new(""),
         api.gui.comp.TextView.new(UIStrings.min),
         api.gui.comp.TextView.new(UIStrings.sec)})
-    menu.constraintTable:addRow({headerTable})
+    menu.constraintHeaderTable:addRow({headerTable})
 
     local debounceTable = api.gui.comp.Table.new(4, 'NONE')
     debounceTable:setColWidth(0,175)
@@ -1088,7 +1092,7 @@ function timetableGUI.makeDebounceWindow(lineID, stationID, debounceType)
         debounceTable:addRow({unbunchTimeHeader, autoDebounceMin, api.gui.comp.TextView.new(":"), autoDebounceSec})
     end
 
-    menu.constraintTable:addRow({debounceTable})
+    menu.constraintHeaderTable:addRow({debounceTable})
 end
 
 -------------------------------------------------------------
@@ -1226,10 +1230,6 @@ function data()
             if timetableChanged then
                 game.interface.sendScriptEvent("timetableUpdate", "", timetable.getTimetableObject())
                 timetableChanged = false
-            end
-            if clearConstraintWindowLaterHACK then
-                clearConstraintWindowLaterHACK()
-                clearConstraintWindowLaterHACK = nil
             end
 
             if not clockstate then
