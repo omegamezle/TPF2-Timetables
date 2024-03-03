@@ -1,4 +1,5 @@
 local timetableHelper = require "celmi/timetables/timetable_helper"
+local guard = require "celmi/timetables/guard"
 
 --[[
 timetable = {
@@ -714,10 +715,12 @@ function timetable.slotsEqual(slot1, slot2)
 end
 
 function timetable.slotToArrivalSlot(slot)
+    guard.againstNil(slot)
     return timetable.minToSec(slot[1], slot[2])
 end
 
 function timetable.slotToDepartureSlot(slot)
+    guard.againstNil(slot)
     return timetable.minToSec(slot[3], slot[4])
 end
 
