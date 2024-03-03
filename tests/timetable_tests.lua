@@ -1,5 +1,8 @@
-local mockTimetableHelper = {}
+local mockTimetableHelper = {} -- Use mock timetable helper
 package.loaded["celmi/timetables/timetable_helper"] = mockTimetableHelper
+
+local guard = require ".res.scripts.celmi.timetables.guard" -- Use real guard class
+package.loaded["celmi/timetables/guard"] = guard
 
 local timetable = require ".res.scripts.celmi.timetables.timetable"
 

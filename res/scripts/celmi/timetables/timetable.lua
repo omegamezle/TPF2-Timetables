@@ -1,4 +1,5 @@
 local timetableHelper = require "celmi/timetables/timetable_helper"
+local guard = require "celmi/timetables/guard"
 
 --[[
 timetable = {
@@ -395,7 +396,8 @@ function timetable.readyToDepartArrDep(vehicle, doorsTime, vehicles, currentTime
     local slots = timetableObject[line].stations[stop].conditions.ArrDep
     if not slots or slots == {} then
         timetableObject[line].stations[stop].conditions.type = "None"
-        return
+        -- If there aren't any timetable slots, then the vehicle should depart now.
+        return true
     end
 
     local slot = nil
@@ -415,6 +417,10 @@ function timetable.readyToDepartArrDep(vehicle, doorsTime, vehicles, currentTime
     end
     if not validSlot then
         slot = timetable.getNextSlot(slots, doorsTime, vehiclesWaiting)
+        -- getNextSlot returns nil when there are no slots. We should depart ASAP.
+        if (slot == nil) then
+            return true
+        end
         local waitTime = timetable.getWaitTime(slot, doorsTime)
         departureTime = timetable.getDepartureTime(line, stop, doorsTime, waitTime)
         vehiclesWaiting[vehicle] = {
@@ -569,7 +575,7 @@ function timetable.setHasTimetable(line, bool)
 end
 
 --- Start all vehicles of given line.
----@param line table line id
+---@param line number line id
 function timetable.restartAutoDepartureForAllLineVehicles(line)
     for _, vehicle in pairs(timetableHelper.getVehiclesOnLine(line)) do
         timetableHelper.restartAutoVehicleDeparture(vehicle)
@@ -608,7 +614,7 @@ end
 ---@param slots table in format like: {{30,0,59,0},{9,0,59,0}}
 ---@param arrivalTime number in seconds
 ---@param vehiclesWaiting table in format like: {[1]={slot={30,0,59,0}, departureTime=3540}, [2]={slot={9,0,59,0}, departureTime=3540}}
----@return table closestSlot example: {30,0,59,0}
+---@return table | nil closestSlot example: {30,0,59,0}
 function timetable.getNextSlot(slots, arrivalTime, vehiclesWaiting)
     -- Put the slots in chronological order by arrival time
     table.sort(slots, function(slot1, slot2)
@@ -714,10 +720,12 @@ function timetable.slotsEqual(slot1, slot2)
 end
 
 function timetable.slotToArrivalSlot(slot)
+    guard.againstNil(slot)
     return timetable.minToSec(slot[1], slot[2])
 end
 
 function timetable.slotToDepartureSlot(slot)
+    guard.againstNil(slot)
     return timetable.minToSec(slot[3], slot[4])
 end
 
@@ -772,7 +780,7 @@ end
 ---Shifts a slot by some offset
 ---@param slot table in format like: {30,0,59,0}
 ---@param offset number in seconds 
----@return slot table shifted time, example: {31,0,0,0}
+---@return table slot shifted time, example: {31,0,0,0}
 function timetable.shiftSlot(slot, offset)
     local arrivalSlot = timetable.slotToArrivalSlot(slot)
     local shiftArr = timetable.shiftTime(arrivalSlot, offset)
