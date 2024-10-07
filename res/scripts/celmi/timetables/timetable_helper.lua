@@ -148,7 +148,7 @@ end
 
 ---@param vehicle number | string
 -- returns departure time of previous vehicle
-function timetableHelper.getPreviousDepartureTime(stop, vehicles)
+function timetableHelper.getPreviousDepartureTime(stop, vehicles, vehiclesWaiting)
     if type(stop) == "string" then stop = tonumber(stop) end
     if not(type(stop) == "number") then print("Expected String or Number") return false end
 
@@ -156,10 +156,14 @@ function timetableHelper.getPreviousDepartureTime(stop, vehicles)
     for _,v in pairs(vehicles) do
         -- append to a list using a[#a + 1] = new_item
         local lineVehicle = api.engine.getComponent(v, api.type.ComponentType.TRANSPORT_VEHICLE)
-        departureTimes[#departureTimes + 1] = lineVehicle.lineStopDepartures[stop]
+        departureTimes[#departureTimes + 1] = lineVehicle.lineStopDepartures[stop]/1000
     end
 
-    return (timetableHelper.maximumArray(departureTimes))/1000
+    for _, vehicleWaiting in pairs(vehiclesWaiting) do
+        departureTimes[#departureTimes + 1] = vehicleWaiting.departureTime
+    end
+
+    return (timetableHelper.maximumArray(departureTimes))
 end
 
 ---@param vehicle number | string

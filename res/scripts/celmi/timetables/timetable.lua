@@ -497,9 +497,9 @@ function timetable.readyToDepartDebounce(vehicle, arrivalTime, vehicles, time, l
         elseif timetable.anotherVehicleArrivedEarlier(vehicle, arrivalTime, line, stop) then
             return false -- Unknown depart time
         elseif debounceIsManual then
-            departureTime = timetable.manualDebounceDepartureTime(arrivalTime, vehicles, time, line, stop)
+            departureTime = timetable.manualDebounceDepartureTime(arrivalTime, vehicles, time, line, stop, vehiclesWaiting)
         else
-            departureTime = timetable.autoDebounceDepartureTime(arrivalTime, vehicles, time, line, stop)
+            departureTime = timetable.autoDebounceDepartureTime(arrivalTime, vehicles, time, line, stop, vehiclesWaiting)
         end
         vehiclesWaiting[vehicle] = { departureTime = departureTime }
     end
@@ -512,8 +512,8 @@ function timetable.readyToDepartDebounce(vehicle, arrivalTime, vehicles, time, l
     return false
 end
 
-function timetable.manualDebounceDepartureTime(arrivalTime, vehicles, time, line, stop)
-    local previousDepartureTime = timetableHelper.getPreviousDepartureTime(stop, vehicles)
+function timetable.manualDebounceDepartureTime(arrivalTime, vehicles, time, line, stop, vehiclesWaiting)
+    local previousDepartureTime = timetableHelper.getPreviousDepartureTime(stop, vehicles, vehiclesWaiting)
     local condition = timetable.getConditions(line, stop, "debounce")
     if condition == -1 then condition = {0, 0} end
     if not condition[1] then condition[1] = 0 end
@@ -525,8 +525,8 @@ function timetable.manualDebounceDepartureTime(arrivalTime, vehicles, time, line
     return timetable.getDepartureTime(line, stop, arrivalTime, waitTime)
 end
 
-function timetable.autoDebounceDepartureTime(arrivalTime, vehicles, time, line, stop)
-    local previousDepartureTime = timetableHelper.getPreviousDepartureTime(stop, vehicles)
+function timetable.autoDebounceDepartureTime(arrivalTime, vehicles, time, line, stop, vehiclesWaiting)
+    local previousDepartureTime = timetableHelper.getPreviousDepartureTime(stop, vehicles, vehiclesWaiting)
     local frequency = timetableObject[line].frequency
     if not frequency then return end
 
