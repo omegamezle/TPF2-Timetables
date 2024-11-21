@@ -199,6 +199,18 @@ function timetableHelper.isLineOfType(lineType)
 end
 
 ---@param line  number | string
+-- returns Bool
+function timetableHelper.getLineType(line)
+	local lineTypes = {"RAIL", "ROAD", "TRAM", "WATER", "AIR"}
+	for k,t in pairs(lineTypes) do
+		if timetableHelper.lineHasType(line, t) then
+			return string.lower(t)
+		end
+	end
+	return "rail"
+end
+
+---@param line  number | string
 ---@param lineType string, eg "RAIL", "ROAD", "TRAM", "WATER", "AIR"
 -- returns Bool
 function timetableHelper.lineHasType(line, lineType)
