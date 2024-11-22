@@ -6,7 +6,7 @@ local clockstate = nil
 
 local timetableEngine = {}
 
-local co = nil
+local activeCorountine = nil
 local state = nil
 
 local timetableChanged = false
@@ -64,13 +64,13 @@ function data()
 		
 		update = function()
 			if state == nil then state = {timetable = {}} end
-			if co == nil or coroutine.status(co) == "dead" then
-				co = coroutine.create(timetableEngine.timetableCoroutine)
+			if activeCorountine == nil or coroutine.status(activeCorountine) == "dead" then
+				activeCorountine = coroutine.create(timetableEngine.timetableCoroutine)
 			end
 			for _ = 0, 20 do
-				local coroutineStatus = coroutine.status(co)
+				local coroutineStatus = coroutine.status(activeCorountine)
 				if coroutineStatus == "suspended" then
-					local err, msg = coroutine.resume(co)
+					local err, msg = coroutine.resume(activeCorountine)
 					if not err then print("Timetables coroutine error: " .. tostring(msg)) end
 				else
 					print("Timetables failed to resume " .. coroutineStatus .. " coroutine.")

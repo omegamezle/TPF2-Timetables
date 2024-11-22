@@ -4,9 +4,9 @@ local tests = {}
 
 return {
     test = function()
-        for k,v in pairs(tests) do
-            print("Running test: " .. tostring(k))
-            v()
+        for currentTestName, currentTestFunction in pairs(tests) do
+            print("Running test: " .. tostring(currentTestName))
+            currentTestFunction()
         end
     end
 }

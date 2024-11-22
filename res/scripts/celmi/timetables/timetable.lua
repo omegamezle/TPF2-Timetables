@@ -42,11 +42,11 @@ function timetable.getTimetableObject()
 	return timetableObject
 end
 
-function timetable.setTimetableObject(t)
-	if t then
+function timetable.setTimetableObject(replacementObject)
+	if replacementObject then
 		-- make sure the line is a number
 		local keysToPatch = { }
-		for lineID, lineInfo in pairs(t) do
+		for lineID, lineInfo in pairs(replacementObject) do
 			if type(lineID) == "string" then
 				table.insert(keysToPatch, lineID)
 			end
@@ -54,13 +54,13 @@ function timetable.setTimetableObject(t)
 		
 		for _, lineID in pairs(keysToPatch) do
 			print("timetable: patching lineID: " .. lineID .. " to be a number")
-			local lineInfo = t[lineID]
-			t[lineID] = nil
-			t[tonumber(lineID)] = lineInfo
+			local lineInfo = replacementObject[lineID]
+			replacementObject[lineID] = nil
+			replacementObject[tonumber(lineID)] = lineInfo
 		end
 		
 		timetableObject = nil
-		timetableObject = t
+		timetableObject = replacementObject
 		-- print("timetable after loading and processing:")
 		-- print(timetableHelper.dump(timetableObject))
 	end

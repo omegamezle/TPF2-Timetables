@@ -15,7 +15,7 @@ local UIState = {
 	currentlySelectedConstraintType = nil,
 	currentlySelectedStationTabStation = nil
 }
-local co = nil
+local activeCorountine = nil
 local state = nil
 
 local timetableChanged = false
@@ -66,11 +66,11 @@ function timetableGUI.initStationTab()
 	--left table
 	local stationOverview = api.gui.comp.TextView.new('StationOverview')
 	menu.stationTabScrollArea = api.gui.comp.ScrollArea.new(stationOverview, "timetable.stationTabStationOverviewScrollArea")
-	menu.stStations = api.gui.comp.Table.new(1, 'SINGLE')
+	menu.stationTabStations = api.gui.comp.Table.new(1, 'SINGLE')
 	menu.stationTabScrollArea:setMinimumSize(api.gui.util.Size.new(320, 720))
 	menu.stationTabScrollArea:setMaximumSize(api.gui.util.Size.new(320, 720))
-	menu.stationTabScrollArea:setContent(menu.stStations)
-	timetableGUI.stFillStations()
+	menu.stationTabScrollArea:setContent(menu.stationTabStations)
+	timetableGUI.stationTabFillStations()
 	UIState.floatingLayoutStationTab:addItem(menu.stationTabScrollArea,0,0)
 
 	local lineOverview = api.gui.comp.TextView.new('LineOverview')
@@ -86,13 +86,13 @@ function timetableGUI.initStationTab()
 end
 
 -- fills the station table on the left side with all stations that have constraints
-function timetableGUI.stFillStations()
+function timetableGUI.stationTabFillStations()
 	-- list all stations that are part of a timetable 
 	timetable.cleanTimetable() -- remove old lines no longer in the game
 	--timetableChanged = true
 	--timetableChanged = false
 
-	menu.stStations:deleteAll()
+	menu.stationTabStations:deleteAll()
 	local stationNameOrder = {} -- used to sort the lines by name
 
 	-- add stations from timetable data
@@ -100,24 +100,24 @@ function timetableGUI.stFillStations()
 		local stationName = timetableHelper.getStationName(stationID)
 		if not (stationName == -1) then
 			local stationNameTextView = api.gui.comp.TextView.new(tostring(stationName))
-			menu.stStations:addRow({stationNameTextView})
+			menu.stationTabStations:addRow({stationNameTextView})
 			stationNameOrder[#stationNameOrder + 1] = stationName
 		end
 	end
 
 	local order = timetableHelper.getOrderOfArray(stationNameOrder)
-	menu.stStations:setOrder(order)
-	menu.stStations:onSelect(timetableGUI.stFillLines)
+	menu.stationTabStations:setOrder(order)
+	menu.stationTabStations:onSelect(timetableGUI.stationTabFillLines)
   
 	-- select last station again
 	if UIState.currentlySelectedStationTabStation
-	   and menu.stStations:getNumRows() > UIState.currentlySelectedStationTabStation  then
-		menu.stStations:select(UIState.currentlySelectedStationTabStation, true)
+	   and menu.stationTabStations:getNumRows() > UIState.currentlySelectedStationTabStation  then
+		menu.stationTabStations:select(UIState.currentlySelectedStationTabStation, true)
 	end
 end
 
 -- fills the line table on the right side with all lines that stop at the selected station
-function timetableGUI.stFillLines(tabIndex)
+function timetableGUI.stationTabFillLines(tabIndex)
 	-- setting up internationalization
 	local lang = api.util.getLanguage()
 	local local_style = {local_styles[lang.code]}
@@ -165,11 +165,11 @@ function timetableGUI.stFillLines(tabIndex)
 
 			-- add constraint info
 			local type = timetableHelper.conditionToString(stopData.conditions[stopData.conditions.type], lineID, stopData.conditions.type)
-			local stConditionString = api.gui.comp.TextView.new(type)
-			stConditionString:setName("conditionString")
-			stConditionString:setStyleClassList(local_style)
+			local stationTabConditionString = api.gui.comp.TextView.new(type)
+			stationTabConditionString:setName("conditionString")
+			stationTabConditionString:setStyleClassList(local_style)
 
-			lineInfoBox:addRow({stConditionString})
+			lineInfoBox:addRow({stationTabConditionString})
 
 			 -- add line table
 			menu.stationTabLinesTable:addRow({lineInfoBox})
@@ -298,7 +298,7 @@ function timetableGUI.showLineMenu()
 
 	menu.tabWidget:onCurrentChanged(function(i)
 		if i == 1 then
-			timetableGUI.stFillStations()
+			timetableGUI.stationTabFillStations()
 		end
 	end)
 
@@ -368,10 +368,10 @@ function timetableGUI.fillLineTable()
 	menu.lineTable:setOrder(order)
 
 	sortAll:onToggle(function()
-		for _,v in pairs(menu.lineTableItems) do
-				v[1]:setVisible(true,false)
-				v[2]:setVisible(true,false)
-				v[3]:setVisible(true,false)
+		for _,selectedTableItem in pairs(menu.lineTableItems) do
+			selectedTableItem[1]:setVisible(true,false)
+			selectedTableItem[2]:setVisible(true,false)
+			selectedTableItem[3]:setVisible(true,false)
 		end
 		sortBus:setSelected(false,false)
 		sortTram:setSelected(false,false)
@@ -383,11 +383,11 @@ function timetableGUI.fillLineTable()
 
 	sortBus:onToggle(function()
 		local linesOfType = timetableHelper.isLineOfType("ROAD")
-		for k,v in pairs(menu.lineTableItems) do
-			if not(linesOfType[k] == nil) then
-				v[1]:setVisible(linesOfType[k],false)
-				v[2]:setVisible(linesOfType[k],false)
-				v[3]:setVisible(linesOfType[k],false)
+		for selectedLineID,selectedTableItem in pairs(menu.lineTableItems) do
+			if not(linesOfType[selectedLineID] == nil) then
+				selectedTableItem[1]:setVisible(linesOfType[selectedLineID],false)
+				selectedTableItem[2]:setVisible(linesOfType[selectedLineID],false)
+				selectedTableItem[3]:setVisible(linesOfType[selectedLineID],false)
 			end
 		end
 		sortBus:setSelected(true,false)
@@ -400,11 +400,11 @@ function timetableGUI.fillLineTable()
 
 	sortTram:onToggle(function()
 		local linesOfType = timetableHelper.isLineOfType("TRAM")
-		for k,v in pairs(menu.lineTableItems) do
-			if not(linesOfType[k] == nil) then
-				v[1]:setVisible(linesOfType[k],false)
-				v[2]:setVisible(linesOfType[k],false)
-				v[3]:setVisible(linesOfType[k],false)
+		for selectedLineID,selectedTableItem in pairs(menu.lineTableItems) do
+			if not(linesOfType[selectedLineID] == nil) then
+				selectedTableItem[1]:setVisible(linesOfType[selectedLineID],false)
+				selectedTableItem[2]:setVisible(linesOfType[selectedLineID],false)
+				selectedTableItem[3]:setVisible(linesOfType[selectedLineID],false)
 			end
 		end
 		sortBus:setSelected(false,false)
@@ -417,11 +417,11 @@ function timetableGUI.fillLineTable()
 
 	sortRail:onToggle(function()
 		local linesOfType = timetableHelper.isLineOfType("RAIL")
-		for k,v in pairs(menu.lineTableItems) do
-			if not(linesOfType[k] == nil) then
-				v[1]:setVisible(linesOfType[k],false)
-				v[2]:setVisible(linesOfType[k],false)
-				v[3]:setVisible(linesOfType[k],false)
+		for selectedLineID,selectedTableItem in pairs(menu.lineTableItems) do
+			if not(linesOfType[selectedLineID] == nil) then
+				selectedTableItem[1]:setVisible(linesOfType[selectedLineID],false)
+				selectedTableItem[2]:setVisible(linesOfType[selectedLineID],false)
+				selectedTableItem[3]:setVisible(linesOfType[selectedLineID],false)
 			end
 		end
 		sortBus:setSelected(false,false)
@@ -434,11 +434,11 @@ function timetableGUI.fillLineTable()
 
 	sortWater:onToggle(function()
 		local linesOfType = timetableHelper.isLineOfType("WATER")
-		for k,v in pairs(menu.lineTableItems) do
-			if not(linesOfType[k] == nil) then
-				v[1]:setVisible(linesOfType[k],false)
-				v[2]:setVisible(linesOfType[k],false)
-				v[3]:setVisible(linesOfType[k],false)
+		for selectedLineID,selectedTableItem in pairs(menu.lineTableItems) do
+			if not(linesOfType[selectedLineID] == nil) then
+				selectedTableItem[1]:setVisible(linesOfType[selectedLineID],false)
+				selectedTableItem[2]:setVisible(linesOfType[selectedLineID],false)
+				selectedTableItem[3]:setVisible(linesOfType[selectedLineID],false)
 			end
 		end
 		sortBus:setSelected(false,false)
@@ -451,11 +451,11 @@ function timetableGUI.fillLineTable()
 
 	sortAir:onToggle(function()
 		local linesOfType = timetableHelper.isLineOfType("AIR")
-		for k,v in pairs(menu.lineTableItems) do
-			if not(linesOfType[k] == nil) then
-				v[1]:setVisible(linesOfType[k],false)
-				v[2]:setVisible(linesOfType[k],false)
-				v[3]:setVisible(linesOfType[k],false)
+		for selectedLineID,selectedTableItem in pairs(menu.lineTableItems) do
+			if not(linesOfType[selectedLineID] == nil) then
+				selectedTableItem[1]:setVisible(linesOfType[selectedLineID],false)
+				selectedTableItem[2]:setVisible(linesOfType[selectedLineID],false)
+				selectedTableItem[3]:setVisible(linesOfType[selectedLineID],false)
 			end
 		end
 		sortBus:setSelected(false,false)
@@ -467,8 +467,8 @@ function timetableGUI.fillLineTable()
 	end)
 
 	UIState.boxlayout2:addItem(menu.lineHeader,0,0)
-	menu.scrollArea:invokeLater( function () 
-		menu.scrollArea:invokeLater(function () 
+	menu.scrollArea:invokeLater( function() 
+		menu.scrollArea:invokeLater(function() 
 			menu.scrollArea:setScrollOffset(lineTableScrollOffset) 
 		end) 
 	end)
@@ -499,51 +499,51 @@ function timetableGUI.fillStationTable(index, bool)
 
 	local stationLegTime = timetableHelper.getLegTimes(lineID)
 	--iterate over all stations to display them
-	for k, v in pairs(timetableHelper.getAllStations(lineID)) do
+	for stopNumber, stopID in pairs(timetableHelper.getAllStations(lineID)) do
 		menu.lineImage = {}
 		local vehiclePositions = timetableHelper.getTrainLocations(lineID)
-		if vehiclePositions[k-1] then
-			if vehiclePositions[k-1].atTerminal then
-				if vehiclePositions[k-1].countStr == "MANY" then
-					menu.lineImage[k] = api.gui.comp.ImageView.new("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_in_station_many.tga")
+		if vehiclePositions[stopNumber-1] then
+			if vehiclePositions[stopNumber-1].atTerminal then
+				if vehiclePositions[stopNumber-1].countStr == "MANY" then
+					menu.lineImage[stopNumber] = api.gui.comp.ImageView.new("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_in_station_many.tga")
 				else
-					menu.lineImage[k] = api.gui.comp.ImageView.new("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_in_station.tga")
+					menu.lineImage[stopNumber] = api.gui.comp.ImageView.new("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_in_station.tga")
 				end
 			else
-				if vehiclePositions[k-1].countStr == "MANY" then
-					menu.lineImage[k] = api.gui.comp.ImageView.new("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_en_route_many.tga")
+				if vehiclePositions[stopNumber-1].countStr == "MANY" then
+					menu.lineImage[stopNumber] = api.gui.comp.ImageView.new("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_en_route_many.tga")
 				else
-					menu.lineImage[k] = api.gui.comp.ImageView.new("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_en_route.tga")
+					menu.lineImage[stopNumber] = api.gui.comp.ImageView.new("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_en_route.tga")
 				end
 			end
 		else
-			menu.lineImage[k] = api.gui.comp.ImageView.new("ui/timetable_line.tga")
+			menu.lineImage[stopNumber] = api.gui.comp.ImageView.new("ui/timetable_line.tga")
 		end
-		local x = menu.lineImage[k]
-		menu.lineImage[k]:onStep(function()
-			if not x then print("ERRROR") return end
+		local currentLineImage = menu.lineImage[stopNumber]
+		menu.lineImage[stopNumber]:onStep(function()
+			if not currentLineImage then print("ERRROR") return end
 			local vehiclePositions2 = timetableHelper.getTrainLocations(lineID)
-			if vehiclePositions2[k-1] then
-				if vehiclePositions2[k-1].atTerminal then
-					if vehiclePositions2[k-1].countStr == "MANY" then
-						x:setImage("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_in_station_many.tga", false)
+			if vehiclePositions2[stopNumber-1] then
+				if vehiclePositions2[stopNumber-1].atTerminal then
+					if vehiclePositions2[stopNumber-1].countStr == "MANY" then
+						currentLineImage:setImage("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_in_station_many.tga", false)
 					else
-						x:setImage("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_in_station.tga", false)
+						currentLineImage:setImage("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_in_station.tga", false)
 					end
 				else
 					if vehiclePositions2[k-1].countStr == "MANY" then
-						x:setImage("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_en_route_many.tga", false)
+						currentLineImage:setImage("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_en_route_many.tga", false)
 					else
-						x:setImage("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_en_route.tga", false)
+						currentLineImage:setImage("ui/"..vehicleType.."/timetable_line_"..vehicleType.."_en_route.tga", false)
 					end
 				end
 			else
-				x:setImage("ui/timetable_line.tga", false)
+				currentLineImage:setImage("ui/timetable_line.tga", false)
 			end
 		end)
 
-		local station = timetableHelper.getStation(v)
-		local stationNumber = api.gui.comp.TextView.new(tostring(k))
+		local station = timetableHelper.getStation(stopID)
+		local stationNumber = api.gui.comp.TextView.new(tostring(stopNumber))
 
 		stationNumber:setStyleClassList({"timetable-stationcolour"})
 		stationNumber:setName("timetable-stationcolour-" .. timetableHelper.getLineColour(lineID))
@@ -552,22 +552,22 @@ function timetableGUI.fillStationTable(index, bool)
 		local stationName = api.gui.comp.TextView.new(station.name)
 		stationName:setName("stationName")
 
-		local jurneyTime
-		if (stationLegTime and stationLegTime[k]) then
-			jurneyTime = api.gui.comp.TextView.new(UIStrings.journey_time .. ": " .. os.date('%M:%S', stationLegTime[k]))
+		local journeyTimeText
+		if (stationLegTime and stationLegTime[stopNumber]) then
+			journeyTimeText = api.gui.comp.TextView.new(UIStrings.journey_time .. ": " .. os.date('%M:%S', stationLegTime[stopNumber]))
 		else
-			jurneyTime = api.gui.comp.TextView.new("")
+			journeyTimeText = api.gui.comp.TextView.new("")
 		end
-		jurneyTime:setName("conditionString")
-		jurneyTime:setStyleClassList(local_style)
+		journeyTimeText:setName("conditionString")
+		journeyTimeText:setStyleClassList(local_style)
 
 		local stationNameTable = api.gui.comp.Table.new(1, 'NONE')
 		stationNameTable:addRow({stationName})
-		stationNameTable:addRow({jurneyTime})
+		stationNameTable:addRow({journeyTimeText})
 		stationNameTable:setColWidth(0,120)
 
-		local conditionType = timetable.getConditionType(lineID, k)
-		local condStr = timetableHelper.conditionToString(timetable.getConditions(lineID, k, conditionType), lineID, conditionType)
+		local conditionType = timetable.getConditionType(lineID, stopNumber)
+		local condStr = timetableHelper.conditionToString(timetable.getConditions(lineID, stopNumber, conditionType), lineID, conditionType)
 		local conditionString = api.gui.comp.TextView.new(condStr)
 		conditionString:setName("conditionString")
 		conditionString:setStyleClassList(local_style)
@@ -575,7 +575,7 @@ function timetableGUI.fillStationTable(index, bool)
 		conditionString:setMinimumSize(api.gui.util.Size.new(360,50))
 		conditionString:setMaximumSize(api.gui.util.Size.new(360,50))
 
-		menu.stationTable:addRow({stationNumber,stationNameTable, menu.lineImage[k], conditionString})
+		menu.stationTable:addRow({stationNumber,stationNameTable, menu.lineImage[stopNumber], conditionString})
 	end
 
 	menu.stationTable:onSelect(function (tableIndex)
@@ -594,8 +594,8 @@ function timetableGUI.fillStationTable(index, bool)
 			timetableGUI.initConstraintTable()
 		end
 	end
-	menu.stationScrollArea:invokeLater(function () 
-		menu.stationScrollArea:invokeLater(function () 
+	menu.stationScrollArea:invokeLater(function() 
+		menu.stationScrollArea:invokeLater(function() 
 			menu.stationScrollArea:setScrollOffset(stationTableScrollOffset) 
 		end) 
 	end)
@@ -603,21 +603,21 @@ end
 
 function timetableGUI.stationTableHeader(lineID)
 	-- force departure setting
-	local forceDepLabel = api.gui.comp.TextView.new("Force departure")
-	forceDepLabel:setGravity(1,0.5)
-	local forceDepImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
-	if timetable.getForceDepartureEnabled(lineID) then forceDepImage:setImage("ui/checkbox1.tga", false) end
-	local forceDepButton = api.gui.comp.Button.new(forceDepImage, true)
-	forceDepButton:setStyleClassList({"timetable-activateTimetableButton"})
-	forceDepButton:setGravity(0,0.5)
-	forceDepButton:onClick(function()
-		local forceDepEnabled = timetable.getForceDepartureEnabled(lineID)
-		if forceDepEnabled then
+	local forceDepartureLabel = api.gui.comp.TextView.new("Force departure")
+	forceDepartureLabel:setGravity(1,0.5)
+	local forceDepartureImage = api.gui.comp.ImageView.new("ui/checkbox0.tga")
+	if timetable.getForceDepartureEnabled(lineID) then forceDepartureImage:setImage("ui/checkbox1.tga", false) end
+	local forceDepartureButton = api.gui.comp.Button.new(forceDepartureImage, true)
+	forceDepartureButton:setStyleClassList({"timetable-activateTimetableButton"})
+	forceDepartureButton:setGravity(0,0.5)
+	forceDepartureButton:onClick(function()
+		local forceDepartureEnabled = timetable.getForceDepartureEnabled(lineID)
+		if forceDepartureEnabled then
 			timetable.setForceDepartureEnabled(lineID, false)
-			forceDepImage:setImage("ui/checkbox0.tga", false)
+			forceDepartureImage:setImage("ui/checkbox0.tga", false)
 		else
 			timetable.setForceDepartureEnabled(lineID, true)
-			forceDepImage:setImage("ui/checkbox1.tga", false)
+			forceDepartureImage:setImage("ui/checkbox1.tga", false)
 		end
 		timetableChanged = true
 	end)
@@ -665,7 +665,7 @@ function timetableGUI.stationTableHeader(lineID)
 	local headerTable = api.gui.comp.Table.new(7, 'None')
 	headerTable:addRow({
 		api.gui.comp.TextView.new(UIStrings.frequency .. " " .. timetableHelper.getFrequencyString(lineID)),
-		forceDepLabel, forceDepButton, minButtonLabel, minButton, maxButtonLabel, maxButton
+		forceDepartureLabel, forceDepartureButton, minButtonLabel, minButton, maxButtonLabel, maxButton
 	})
 	--headerTable:addRow({})
 
@@ -747,8 +747,8 @@ function timetableGUI.fillConstraintTable(index,lineID)
 	table:addRow({infoImage,comboBox})
 	menu.constraintHeaderTable:addRow({table})
 	comboBox:setSelected(UIState.currentlySelectedConstraintType, true)
-	menu.scrollAreaConstraint:invokeLater(function ()
-		menu.scrollAreaConstraint:invokeLater(function () 
+	menu.scrollAreaConstraint:invokeLater(function()
+		menu.scrollAreaConstraint:invokeLater(function() 
 			menu.scrollAreaConstraint:setScrollOffset(constraintTableScrollOffset) 
 		end) 
 	end)
@@ -761,8 +761,8 @@ function timetableGUI.makeArrDepWindow(lineID, stationID)
 	-- setup separation selector
 	local separationList = {30, 20, 15, 12, 10, 7.5, 6, 5, 4, 3, 2.5, 2, 1.5, 1.2, 1}
 	local separationCombo = api.gui.comp.ComboBox.new()
-	for k,v in ipairs(separationList) do 
-		separationCombo:addItem(v .. " min (" .. 60 / v .. "/h)")
+	for _,separationTime in ipairs(separationList) do 
+		separationCombo:addItem(separationTime .. " min (" .. 60 / separationTime .. "/h)")
 	end
 	separationCombo:setGravity(1,0)
 	
@@ -873,7 +873,7 @@ function timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
 	menu.constraintContentTable:deleteAll()
 
 	-- setup arrival and departure content
-	for k,v in pairs(conditions) do
+	for conditionNumber,conditionInfo in pairs(conditions) do
 		local horizontalLine = api.gui.comp.Component.new("HorizontalLine")
 		menu.constraintContentTable:addRow({horizontalLine})
 
@@ -883,9 +883,9 @@ function timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
 		local arrivalMin = api.gui.comp.DoubleSpinBox.new()
 		arrivalMin:setMinimum(0,false)
 		arrivalMin:setMaximum(59,false)
-		arrivalMin:setValue(v[1],false)
+		arrivalMin:setValue(conditionInfo[1],false)
 		arrivalMin:onChange(function(value)
-			timetable.updateArrDep(lineID, stationID, k, 1, value)
+			timetable.updateArrDep(lineID, stationID, conditionNumber, 1, value)
 			timetableChanged = true
 			timetableGUI.initStationTable()
 			timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
@@ -896,9 +896,9 @@ function timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
 		local arrivalSec = api.gui.comp.DoubleSpinBox.new()
 		arrivalSec:setMinimum(0,false)
 		arrivalSec:setMaximum(59,false)
-		arrivalSec:setValue(v[2],false)
+		arrivalSec:setValue(conditionInfo[2],false)
 		arrivalSec:onChange(function(value)
-			timetable.updateArrDep(lineID, stationID, k, 2, value)
+			timetable.updateArrDep(lineID, stationID, conditionNumber, 2, value)
 			timetableChanged = true
 			timetableGUI.initStationTable()
 			timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
@@ -910,11 +910,11 @@ function timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
 		deleteButton:onClick(function()
 			deleteButton:setEnabled(false)
 			timetableGUI.popUpYesNo("Delete?", function()
-				timetable.removeCondition(lineID, stationID, "ArrDep", k)
+				timetable.removeCondition(lineID, stationID, "ArrDep", conditionNumber)
 				timetableChanged = true
 				timetableGUI.initStationTable()
 				timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-				menu.constraintTable:invokeLater( function ()
+				menu.constraintTable:invokeLater( function()
 					timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
 				end)
 
@@ -944,9 +944,9 @@ function timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
 		local departureMin = api.gui.comp.DoubleSpinBox.new()
 		departureMin:setMinimum(0,false)
 		departureMin:setMaximum(59,false)
-		departureMin:setValue(v[3],false)
+		departureMin:setValue(conditionInfo[3],false)
 		departureMin:onChange(function(value)
-			timetable.updateArrDep(lineID, stationID, k, 3, value)
+			timetable.updateArrDep(lineID, stationID, conditionNumber, 3, value)
 			timetableChanged = true
 			timetableGUI.initStationTable()
 			timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
@@ -957,9 +957,9 @@ function timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
 		local departureSec = api.gui.comp.DoubleSpinBox.new()
 		departureSec:setMinimum(0,false)
 		departureSec:setMaximum(59,false)
-		departureSec:setValue(v[4],false)
+		departureSec:setValue(conditionInfo[4],false)
 		departureSec:onChange(function(value)
-			timetable.updateArrDep(lineID, stationID, k, 4, value)
+			timetable.updateArrDep(lineID, stationID, conditionNumber, 4, value)
 			timetableChanged = true
 			timetableGUI.initStationTable()
 			timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
@@ -969,11 +969,11 @@ function timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
 		insertLabel:setMinimumSize(api.gui.util.Size.new(60, 10))
 		local insertButton = api.gui.comp.Button.new(insertLabel, true)
 		insertButton:onClick(function()
-			timetable.insertArrDepCondition(lineID, stationID, k, {0,0,0,0})
+			timetable.insertArrDepCondition(lineID, stationID, conditionNumber, {0,0,0,0})
 			timetableChanged = true
 			timetableGUI.initStationTable()
 			timetableGUI.fillStationTable(UIState.currentlySelectedLineTableIndex, false)
-			menu.constraintTable:invokeLater( function ()
+			menu.constraintTable:invokeLater( function()
 				timetableGUI.makeArrDepConstraintsTable(lineID, stationID)
 			end)
 		end)
@@ -1171,7 +1171,7 @@ function data()
 				local buttonLabel = gui.textView_create("gameInfo.timetables.label", UIStrings.timetable)
 
 				local button = gui.button_create("gameInfo.timetables.button", buttonLabel)
-				button:onClick(function ()
+				button:onClick(function()
 					local err, msg = pcall(timetableGUI.showLineMenu)
 					if not err then
 						menu.window = nil

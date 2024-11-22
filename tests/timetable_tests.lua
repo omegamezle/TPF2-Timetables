@@ -572,9 +572,9 @@ end
 
 return {
     test = function()
-        for k,v in pairs(timetableTests) do
-            print("Running test: " .. tostring(k))
-            v()
+        for currentTestName, currentTestFunction in pairs(timetableTests) do
+            print("Running test: " .. tostring(currentTestName))
+            currentTestFunction()
         end
     end
 }
