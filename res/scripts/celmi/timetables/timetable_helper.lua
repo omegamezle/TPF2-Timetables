@@ -192,8 +192,8 @@ end
 function timetableHelper.isLineOfType(lineType)
 	local lines = api.engine.system.lineSystem.getLines()
 	local res = {}
-	for k,l in pairs(lines) do
-		res[k] = timetableHelper.lineHasType(l, lineType)
+	for lineNumber,lineID in pairs(lines) do
+		res[lineNumber] = timetableHelper.lineHasType(lineID, lineType)
 	end
 	return res
 end
@@ -308,13 +308,13 @@ function timetableHelper.getAllLines()
 	local res = {}
 	local ls = api.engine.system.lineSystem.getLines()
 
-	for k,l in pairs(ls) do
+	for lineNumber,lineID in pairs(ls) do
 		local apiComponentName = api.type.ComponentType.NAME
 		local lineName = api.engine.getComponent(l, apiComponentName)
 		if lineName and lineName.name then
-			res[k] = {id = l, name = lineName.name}
+			res[lineNumber] = {id = lineID, name = lineName.name}
 		else
-			res[k] = {id = l, name = "ERROR"}
+			res[lineNumber] = {id = lineID, name = "ERROR"}
 		end
 	end
 	return res

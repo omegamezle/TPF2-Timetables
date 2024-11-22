@@ -194,8 +194,8 @@ function timetableGUI.initLineTable()
 	if menu.lineHeader then UIState.boxlayout2:removeItem(menu.lineHeader) end
 
 
-	local lineOverwiew = api.gui.comp.TextView.new('LineOverview')
-	menu.scrollArea = api.gui.comp.ScrollArea.new(lineOverwiew, "timetable.LineOverview")
+	local lineOverviewText = api.gui.comp.TextView.new('LineOverview')
+	menu.scrollArea = api.gui.comp.ScrollArea.new(lineOverviewText, "timetable.LineOverview")
 	menu.lineTable = api.gui.comp.Table.new(3, 'SINGLE')
 	menu.lineTable:setColWidth(0,28)
 
@@ -383,11 +383,11 @@ function timetableGUI.fillLineTable()
 
 	sortBus:onToggle(function()
 		local linesOfType = timetableHelper.isLineOfType("ROAD")
-		for selectedLineID,selectedTableItem in pairs(menu.lineTableItems) do
-			if not(linesOfType[selectedLineID] == nil) then
-				selectedTableItem[1]:setVisible(linesOfType[selectedLineID],false)
-				selectedTableItem[2]:setVisible(linesOfType[selectedLineID],false)
-				selectedTableItem[3]:setVisible(linesOfType[selectedLineID],false)
+		for selectedLineNumber,selectedTableItem in pairs(menu.lineTableItems) do
+			if not(linesOfType[selectedLineNumber] == nil) then
+				selectedTableItem[1]:setVisible(linesOfType[selectedLineNumber],false)
+				selectedTableItem[2]:setVisible(linesOfType[selectedLineNumber],false)
+				selectedTableItem[3]:setVisible(linesOfType[selectedLineNumber],false)
 			end
 		end
 		sortBus:setSelected(true,false)
@@ -400,11 +400,11 @@ function timetableGUI.fillLineTable()
 
 	sortTram:onToggle(function()
 		local linesOfType = timetableHelper.isLineOfType("TRAM")
-		for selectedLineID,selectedTableItem in pairs(menu.lineTableItems) do
-			if not(linesOfType[selectedLineID] == nil) then
-				selectedTableItem[1]:setVisible(linesOfType[selectedLineID],false)
-				selectedTableItem[2]:setVisible(linesOfType[selectedLineID],false)
-				selectedTableItem[3]:setVisible(linesOfType[selectedLineID],false)
+		for selectedLineNumber,selectedTableItem in pairs(menu.lineTableItems) do
+			if not(linesOfType[selectedLineNumber] == nil) then
+				selectedTableItem[1]:setVisible(linesOfType[selectedLineNumber],false)
+				selectedTableItem[2]:setVisible(linesOfType[selectedLineNumber],false)
+				selectedTableItem[3]:setVisible(linesOfType[selectedLineNumber],false)
 			end
 		end
 		sortBus:setSelected(false,false)
@@ -417,11 +417,11 @@ function timetableGUI.fillLineTable()
 
 	sortRail:onToggle(function()
 		local linesOfType = timetableHelper.isLineOfType("RAIL")
-		for selectedLineID,selectedTableItem in pairs(menu.lineTableItems) do
-			if not(linesOfType[selectedLineID] == nil) then
-				selectedTableItem[1]:setVisible(linesOfType[selectedLineID],false)
-				selectedTableItem[2]:setVisible(linesOfType[selectedLineID],false)
-				selectedTableItem[3]:setVisible(linesOfType[selectedLineID],false)
+		for selectedLineNumber,selectedTableItem in pairs(menu.lineTableItems) do
+			if not(linesOfType[selectedLineNumber] == nil) then
+				selectedTableItem[1]:setVisible(linesOfType[selectedLineNumber],false)
+				selectedTableItem[2]:setVisible(linesOfType[selectedLineNumber],false)
+				selectedTableItem[3]:setVisible(linesOfType[selectedLineNumber],false)
 			end
 		end
 		sortBus:setSelected(false,false)
@@ -434,11 +434,11 @@ function timetableGUI.fillLineTable()
 
 	sortWater:onToggle(function()
 		local linesOfType = timetableHelper.isLineOfType("WATER")
-		for selectedLineID,selectedTableItem in pairs(menu.lineTableItems) do
-			if not(linesOfType[selectedLineID] == nil) then
-				selectedTableItem[1]:setVisible(linesOfType[selectedLineID],false)
-				selectedTableItem[2]:setVisible(linesOfType[selectedLineID],false)
-				selectedTableItem[3]:setVisible(linesOfType[selectedLineID],false)
+		for selectedLineNumber,selectedTableItem in pairs(menu.lineTableItems) do
+			if not(linesOfType[selectedLineNumber] == nil) then
+				selectedTableItem[1]:setVisible(linesOfType[selectedLineNumber],false)
+				selectedTableItem[2]:setVisible(linesOfType[selectedLineNumber],false)
+				selectedTableItem[3]:setVisible(linesOfType[selectedLineNumber],false)
 			end
 		end
 		sortBus:setSelected(false,false)
@@ -451,11 +451,11 @@ function timetableGUI.fillLineTable()
 
 	sortAir:onToggle(function()
 		local linesOfType = timetableHelper.isLineOfType("AIR")
-		for selectedLineID,selectedTableItem in pairs(menu.lineTableItems) do
-			if not(linesOfType[selectedLineID] == nil) then
-				selectedTableItem[1]:setVisible(linesOfType[selectedLineID],false)
-				selectedTableItem[2]:setVisible(linesOfType[selectedLineID],false)
-				selectedTableItem[3]:setVisible(linesOfType[selectedLineID],false)
+		for selectedLineNumber,selectedTableItem in pairs(menu.lineTableItems) do
+			if not(linesOfType[selectedLineNumber] == nil) then
+				selectedTableItem[1]:setVisible(linesOfType[selectedLineNumber],false)
+				selectedTableItem[2]:setVisible(linesOfType[selectedLineNumber],false)
+				selectedTableItem[3]:setVisible(linesOfType[selectedLineNumber],false)
 			end
 		end
 		sortBus:setSelected(false,false)
